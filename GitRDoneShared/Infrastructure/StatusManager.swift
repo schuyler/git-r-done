@@ -31,6 +31,7 @@ public final class StatusManager: StatusManaging {
     // MARK: - Properties
 
     private let gitOps: GitOperations
+    private let statusCache: StatusCaching
     private let queue = DispatchQueue(label: "info.schuyler.gitrdone.statusmanager")
     private var cache: [String: RepoStatus] = [:]
     private var pendingRefreshes: Set<String> = []
@@ -38,8 +39,12 @@ public final class StatusManager: StatusManaging {
 
     public var onBadgeUpdate: ((URL, String) -> Void)?
 
-    public init(gitOps: GitOperations = GitOperations()) {
+    public init(
+        gitOps: GitOperations = GitOperations(),
+        statusCache: StatusCaching = SharedStatusCache.shared
+    ) {
         self.gitOps = gitOps
+        self.statusCache = statusCache
     }
 
     public func getCachedStatus(for repoPath: String) -> RepoStatus? {
@@ -89,20 +94,22 @@ public final class StatusManager: StatusManaging {
 
         Log.status.debug("Refreshing status for \(repoPath)")
 
-        let result = gitOps.getStatus(in: repoPath)
+        let result = gitOps.status(for: repoPath)
 
         switch result {
-        case .success(let statuses):
-            var files: [String: GitFileStatus] = [:]
-            for status in statuses {
-                files[status.path] = status
-            }
-
-            let repoStatus = RepoStatus(repoPath: repoPath, files: files)
-
+        case .success(let repoStatus):
             queue.async { [self] in
                 cache[repoPath] = repoStatus
-                Log.status.info("Updated cache for \(repoPath): \(files.count) files")
+                Log.status.info("Updated cache for \(repoPath): \(repoStatus.files.count) files")
+
+                // Update SharedStatusCache
+                let aggregate = computeAggregate(for: repoStatus)
+                let summary = RepoStatusSummary(
+                    path: repoPath,
+                    status: aggregate,
+                    commitsAhead: repoStatus.commitsAhead
+                )
+                statusCache.update(summary)
 
                 // Notify about all tracked URLs
                 if let urls = trackedURLs[repoPath] {
@@ -118,6 +125,18 @@ public final class StatusManager: StatusManaging {
         case .failure(let error):
             Log.status.error("Failed to get status for \(repoPath): \(error.localizedDescription)")
         }
+    }
+
+    private func computeAggregate(for status: RepoStatus) -> BadgePriority {
+        let fileStatuses = status.files.values.map { BadgePriority(from: $0) }
+        let worstFilePriority = fileStatuses.max() ?? .clean
+
+        // If clean but ahead of remote, show .ahead
+        if worstFilePriority == .clean && status.commitsAhead > 0 {
+            return .ahead
+        }
+
+        return worstFilePriority
     }
 
     public func getBadgeIdentifier(for url: URL, repoPath: String, status: RepoStatus? = nil) -> String {

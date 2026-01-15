@@ -29,10 +29,12 @@ Badges display file status in Finder with system symbols and colors:
 
 - **Untracked** (gray): `questionmark.circle`
 - **Modified** (orange): `circle.fill`
-- **Staged** (green): `checkmark.circle.fill`
+- **Staged** (yellow): `circle.fill`
 - **Conflict** (red): `exclamationmark.circle.fill`
 
 The `setupBadges()` method registers each badge with the Finder sync controller. Badges are requested via `requestBadgeIdentifier(for:)` when Finder displays a file.
+
+Note: The "Ahead" status (local commits not pushed) applies only at the repository level for menu bar display, not to individual file badges.
 
 ## File System Monitoring
 
@@ -43,6 +45,16 @@ The extension monitors registered repositories for changes:
 - `updateWatchedDirectories()` - Syncs watched directories with configured repositories
 
 Repository changes trigger `repositoriesDidChange()`, which updates the watch list.
+
+## Shared Status Cache
+
+After each status refresh, the extension updates `SharedStatusCache` with aggregate repository status. This enables the main app to display repository status in the menu bar without running its own Git queries.
+
+The status manager computes:
+- Aggregate file status (worst-case wins: conflict > modified > staged > untracked > ahead > clean)
+- Branch ahead/behind info from `git status --porcelain=v2` headers (`# branch.ab +N -M`)
+
+This data is persisted to App Groups and triggers a `statusCacheDidChange` notification for the main app.
 
 ## Context Menu
 

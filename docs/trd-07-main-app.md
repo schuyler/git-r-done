@@ -18,10 +18,32 @@ The main app is a menu bar application using SwiftUI's `MenuBarExtra` with NSMen
 
 #### Menu Bar Interface
 
-The menu bar displays:
+The menu bar displays repository status and standard menu items:
+
+**Repository Status Section:**
+- Each watched repository shown with status icon and basename
+- Clicking a repository opens it in Finder
+- Status icons indicate aggregate repository state:
+
+| Icon | Color | Status | Meaning |
+|------|-------|--------|---------|
+| ✓ | Green | Clean | In sync with remote |
+| ↑ | Blue | Ahead | Local commits to push |
+| ? | Gray | Untracked | New files not tracked |
+| ● | Yellow | Staged | Files staged, not committed |
+| ● | Orange | Modified | Unstaged changes |
+| ! | Red | Conflict | Merge conflicts |
+
+**Empty State:**
+When no repositories are configured, displays "No repositories" with prompt to add one in Settings.
+
+**Standard Menu Items:**
 - Settings... (⌘,) - Opens the settings window
 - About Git-R-Done - Shows the standard macOS about panel
 - Quit Git-R-Done (⌘Q) - Terminates the application
+
+**Data Source:**
+Repository status is read from `SharedStatusCache`, which is populated by the Finder extension. The menu observes `statusCacheDidChange` notifications to update when status changes.
 
 #### Settings View
 

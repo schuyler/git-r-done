@@ -60,6 +60,10 @@ final class SettingsViewModel {
     }
 
     func removeRepository(id: UUID) {
+        // Get the path before removing so we can clean up the status cache
+        if let repo = repoConfiguration.repositories.first(where: { $0.id == id }) {
+            SharedStatusCache.shared.remove(path: repo.path)
+        }
         repoConfiguration.remove(id: id)
     }
 

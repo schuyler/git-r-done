@@ -28,3 +28,11 @@ public protocol GitValidating {
 public protocol ErrorPresenting {
     func showError(_ message: String)
 }
+
+/// Protocol for caching repository status summaries
+public protocol StatusCaching {
+    var summaries: [RepoStatusSummary] { get }
+    func update(_ summary: RepoStatusSummary)
+    func remove(path: String)
+    func summary(for path: String) -> RepoStatusSummary?
+}

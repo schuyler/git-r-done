@@ -53,14 +53,19 @@ class FinderSync: FIFinderSync {
             controller.setBadgeImage(image.tinted(with: .systemOrange), label: "Modified", forBadgeIdentifier: "Modified")
         }
 
-        // Staged - green checkmark
-        if let image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: "Staged") {
-            controller.setBadgeImage(image.tinted(with: .systemGreen), label: "Staged", forBadgeIdentifier: "Staged")
+        // Staged - yellow dot (was green)
+        if let image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "Staged") {
+            controller.setBadgeImage(image.tinted(with: .systemYellow), label: "Staged", forBadgeIdentifier: "Staged")
         }
 
         // Conflict - red exclamation
         if let image = NSImage(systemSymbolName: "exclamationmark.circle.fill", accessibilityDescription: "Conflict") {
             controller.setBadgeImage(image.tinted(with: .systemRed), label: "Conflict", forBadgeIdentifier: "Conflict")
+        }
+
+        // Ahead - blue up arrow (repo has unpushed commits)
+        if let image = NSImage(systemSymbolName: "arrow.up.circle.fill", accessibilityDescription: "Ahead") {
+            controller.setBadgeImage(image.tinted(with: .systemBlue), label: "Ahead", forBadgeIdentifier: "Ahead")
         }
     }
 

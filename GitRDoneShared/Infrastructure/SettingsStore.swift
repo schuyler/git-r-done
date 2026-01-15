@@ -67,4 +67,5 @@ public final class SettingsStore: SettingsStoring {
 public extension Notification.Name {
     static let settingsDidChange = Notification.Name("info.schuyler.gitrdone.settingsDidChange")
     static let repositoriesDidChange = Notification.Name("info.schuyler.gitrdone.repositoriesDidChange")
+    static let statusCacheDidChange = Notification.Name("info.schuyler.gitrdone.statusCacheDidChange")
 }

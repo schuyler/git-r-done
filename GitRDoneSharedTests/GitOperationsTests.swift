@@ -69,7 +69,7 @@ final class GitOperationsTests: XCTestCase {
     }
 
     func test_status_returnsTimedOut() {
-        mockExecutor.stub(["status", "--porcelain=v2"], result: .timedOut)
+        mockExecutor.stub(["status", "--porcelain=v2", "--branch"], result: .timedOut)
 
         let result = gitOps.status(for: "/repo")
 

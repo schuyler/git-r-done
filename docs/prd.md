@@ -59,10 +59,11 @@ Git-R-Done.app/
 **Main App (Menu Bar):**
 - Lives in menu bar; no Dock icon, no standalone window (except first-launch and settings)
 - First-launch onboarding window (enable extension in System Settings)
-- Menu bar dropdown menu (Settings, About, Quit)
+- Menu bar dropdown menu showing repository status, Settings, About, Quit
 - Settings window for managing watched repositories and auto-push toggle
 - Register and handle macOS Services for adding repos
 - Persist configuration via App Groups (shared UserDefaults suite)
+- Read repository status from shared cache to display in menu
 
 **Finder Sync Extension:**
 - Register watched directories with Finder
@@ -71,10 +72,12 @@ Git-R-Done.app/
 - Execute Git operations via shared GitOperations module
 - Trigger AppleScript dialogs for user input (commit messages, conflict reports)
 - Post macOS notifications for operation results
+- Write repository status to shared cache for main app consumption
 
 **Shared Module:**
 - `GitOperations`: Executes `git` CLI commands, parses output
 - `GitStatusCache`: Caches `git status` results, invalidates on FSEvents or manual refresh
+- `SharedStatusCache`: Persists aggregate repo status to App Groups for main app
 - `RepoConfiguration`: Reads/writes App Group UserDefaults
 - `ConflictHandler`: Implements "Keep Both" conflict resolution strategy
 - `NotificationHelper`: Posts macOS User Notifications
@@ -83,7 +86,7 @@ Git-R-Done.app/
 ### Communication Model
 
 - **App → Extension:** App Group shared UserDefaults (repo list, preferences)
-- **Extension → App:** Not required for v1 (extension is self-sufficient)
+- **Extension → App:** App Group shared UserDefaults (repository status cache)
 - **User input:** AppleScript `display dialog` for commit messages and conflict reports
 
 ## User Interface
@@ -92,6 +95,10 @@ Git-R-Done.app/
 
 ```
 ┌─────────────────────────────┐
+│ ● ProjectX                  │
+│ ✓ TeamDocs                  │
+│ ! SharedRepo                │
+├─────────────────────────────┤
 │ Settings...            ⌘,  │
 ├─────────────────────────────┤
 │ About Git-R-Done            │
@@ -99,7 +106,29 @@ Git-R-Done.app/
 └─────────────────────────────┘
 ```
 
-A minimal NSMenu dropdown following standard macOS conventions.
+The menu bar dropdown displays watched repositories with status indicators:
+
+| Icon | Color | Status | Meaning |
+|------|-------|--------|---------|
+| ✓ | Green | Clean | In sync with remote |
+| ↑ | Blue | Ahead | Local commits to push |
+| ? | Gray | Untracked | New files not tracked |
+| ● | Yellow | Staged | Files staged, not committed |
+| ● | Orange | Modified | Unstaged changes |
+| ! | Red | Conflict | Merge conflicts |
+
+Each repository shows its aggregate status (worst-case wins). Clicking a repository opens it in Finder.
+
+**Empty state** (no repositories configured):
+```
+┌─────────────────────────────┐
+│ No repositories             │
+│ Add one in Settings...      │
+├─────────────────────────────┤
+│ Settings...            ⌘,  │
+│ ...                         │
+└─────────────────────────────┘
+```
 
 ### Settings Window
 
@@ -224,12 +253,25 @@ After onboarding, the app runs as menu bar only.
 |--------|-------|--------|
 | Untracked | Gray ? | `git status`: `?` |
 | Modified (unstaged) | Orange dot | `git status`: `M` (worktree) |
-| Staged | Green checkmark | `git status`: `M`/`A` (index) |
+| Staged | Yellow dot | `git status`: `M`/`A` (index) |
 | Conflict | Red ! | `git status`: `U` |
 | Clean | None (no badge) | No status entry |
 | Ignored | None (no badge) | Not tracked |
 
 Folder badges reflect aggregate status of contents (worst-case wins: conflict > modified > staged > untracked > clean).
+
+### Repository Status
+
+In addition to file-level badges, Git-R-Done tracks repository-level status:
+
+| Status | Meaning | Source |
+|--------|---------|--------|
+| Clean | In sync with remote | No local changes, not ahead/behind |
+| Ahead | Local commits to push | `git status`: `branch.ab +N` |
+| Has changes | Files modified/staged/untracked | Aggregate of file statuses |
+| Conflict | Unresolved merge conflicts | Any file with conflict status |
+
+Priority (worst-case wins): conflict > modified > staged > untracked > ahead > clean
 
 ### Context Menu Actions
 
@@ -341,6 +383,18 @@ Finder's `FIFinderSync` requests badges synchronously and frequently. We must:
 - Refresh cache asynchronously on FSEvents
 - Provide manual "Refresh" context menu option as fallback
 
+### Shared Status Cache
+
+The Finder extension computes aggregate repository status (worst-case file status plus branch ahead/behind info) and persists it to App Groups. This allows the main app to display repository status in the menu bar without running its own `git status` queries.
+
+Data stored per repository:
+- Repository path
+- Aggregate status (clean/ahead/untracked/staged/modified/conflict)
+- Commits ahead of remote (for "Ahead" status)
+- Last updated timestamp
+
+The extension updates this cache after each status refresh. The main app reads from the cache when building the menu bar dropdown.
+
 ## Distribution
 
 - **Direct download** from project website / GitHub releases
@@ -365,4 +419,3 @@ Finder's `FIFinderSync` requests badges synchronously and frequently. We must:
 - Localization
 - "Open in GitLab/GitHub" context menu action
 - Automatic cleanup reminders for old `(Conflict ...)` files
-- Status bar icon badge (e.g., red dot when conflicts exist)

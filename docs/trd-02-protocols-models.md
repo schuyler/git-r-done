@@ -124,6 +124,19 @@ protocol GitValidating {
 }
 ```
 
+### 3.9 StatusCaching
+
+Manages shared repository status cache for cross-process communication.
+
+```swift
+protocol StatusCaching {
+    var summaries: [RepoStatusSummary] { get }
+    func update(_ summary: RepoStatusSummary)
+    func remove(path: String)
+    func summary(for path: String) -> RepoStatusSummary?
+}
+```
+
 ## 4. Data Models
 
 ### 4.1 WatchedRepository
@@ -320,12 +333,13 @@ struct AppSettings: Codable, Equatable {
 Priority level for Finder badge display, ordered from lowest to highest priority.
 
 ```swift
-enum BadgePriority: Int, Comparable {
+enum BadgePriority: Int, Comparable, Codable {
     case clean = 0
-    case untracked = 1
-    case staged = 2
-    case modified = 3
-    case conflict = 4
+    case ahead = 1
+    case untracked = 2
+    case staged = 3
+    case modified = 4
+    case conflict = 5
 
     static func < (lhs: BadgePriority, rhs: BadgePriority) -> Bool {
         lhs.rawValue < rhs.rawValue
@@ -334,6 +348,7 @@ enum BadgePriority: Int, Comparable {
     var badgeIdentifier: String {
         switch self {
         case .clean: return ""
+        case .ahead: return "Ahead"
         case .untracked: return "Untracked"
         case .staged: return "Staged"
         case .modified: return "Modified"
@@ -353,6 +368,30 @@ enum BadgePriority: Int, Comparable {
         } else {
             self = .clean
         }
+    }
+}
+```
+
+### 4.10 RepoStatusSummary
+
+Aggregate repository status for menu bar display. Stored in shared App Groups for communication between Finder extension and main app.
+
+```swift
+struct RepoStatusSummary: Codable, Equatable {
+    let path: String
+    let status: BadgePriority
+    let commitsAhead: Int
+    let updatedAt: Date
+
+    init(path: String, status: BadgePriority, commitsAhead: Int = 0, updatedAt: Date = Date()) {
+        self.path = path
+        self.status = status
+        self.commitsAhead = commitsAhead
+        self.updatedAt = updatedAt
+    }
+
+    var displayName: String {
+        URL(fileURLWithPath: path).lastPathComponent
     }
 }
 ```

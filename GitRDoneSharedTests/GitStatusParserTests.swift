@@ -358,4 +358,29 @@ struct GitStatusParserTests {
         #expect(result[1].path == "a_first.txt")
         #expect(result[2].path == "m_middle.txt")
     }
+
+    // MARK: - Branch Ahead/Behind Tests
+
+    @Test func parseBranchAb_parsesAheadBehind() {
+        let output = """
+        # branch.ab +2 -1
+        """
+        let branchInfo = GitStatusParser.parseBranchInfo(output)
+        #expect(branchInfo.ahead == 2)
+        #expect(branchInfo.behind == 1)
+    }
+
+    @Test func parseBranchAb_zeros() {
+        let output = "# branch.ab +0 -0"
+        let branchInfo = GitStatusParser.parseBranchInfo(output)
+        #expect(branchInfo.ahead == 0)
+        #expect(branchInfo.behind == 0)
+    }
+
+    @Test func parseBranchAb_missingLine() {
+        let output = "# branch.head main\n? file.txt"
+        let branchInfo = GitStatusParser.parseBranchInfo(output)
+        #expect(branchInfo.ahead == 0)
+        #expect(branchInfo.behind == 0)
+    }
 }

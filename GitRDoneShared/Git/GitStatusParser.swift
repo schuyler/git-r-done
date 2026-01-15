@@ -99,4 +99,22 @@ public enum GitStatusParser {
             .components(separatedBy: "\n")
             .filter { !$0.isEmpty }
     }
+
+    /// Parses branch ahead/behind info from `git status --porcelain=v2` output
+    /// Looks for line like: `# branch.ab +2 -1` (2 ahead, 1 behind)
+    public static func parseBranchInfo(_ output: String) -> BranchInfo {
+        let lines = output.components(separatedBy: .newlines)
+        for line in lines {
+            if line.hasPrefix("# branch.ab ") {
+                // Parse "# branch.ab +N -M"
+                let parts = line.dropFirst("# branch.ab ".count).split(separator: " ")
+                if parts.count == 2,
+                   let ahead = Int(parts[0].dropFirst()),  // drop the +
+                   let behind = Int(parts[1].dropFirst()) {  // drop the -
+                    return BranchInfo(ahead: ahead, behind: behind)
+                }
+            }
+        }
+        return BranchInfo()
+    }
 }

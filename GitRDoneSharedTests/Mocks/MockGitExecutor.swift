@@ -26,7 +26,7 @@ final class MockGitExecutor: GitExecuting {
     }
 
     func stubStatus(_ output: String) {
-        stub(["status", "--porcelain=v2"], result: .success(output))
+        stub(["status", "--porcelain=v2", "--branch"], result: .success(output))
     }
 
     func stubPull(_ output: String, success: Bool = true) {

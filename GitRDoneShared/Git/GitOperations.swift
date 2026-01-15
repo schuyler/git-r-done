@@ -27,7 +27,7 @@ public final class GitOperations: GitValidating {
             return .failure(.gitNotInstalled)
         }
 
-        let result = executor.execute(["status", "--porcelain=v2"], in: repoPath, timeout: timeout)
+        let result = executor.execute(["status", "--porcelain=v2", "--branch"], in: repoPath, timeout: timeout)
 
         if result == .timedOut {
             return .failure(.timedOut)
@@ -42,7 +42,15 @@ public final class GitOperations: GitValidating {
         for file in fileList {
             files[file.path] = file
         }
-        let status = RepoStatus(repoPath: repoPath, files: files, timestamp: Date())
+
+        let branchInfo = GitStatusParser.parseBranchInfo(result.stdout)
+        let status = RepoStatus(
+            repoPath: repoPath,
+            files: files,
+            timestamp: Date(),
+            commitsAhead: branchInfo.ahead,
+            commitsBehind: branchInfo.behind
+        )
         return .success(status)
     }
 

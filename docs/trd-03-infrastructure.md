@@ -253,11 +253,50 @@ manager.invalidate(repoPath: repoPath)
 - `settings: AppSettings` (read-only)
 - `update(_:)`
 
+## SharedStatusCache
+
+`SharedStatusCache` implements `StatusCaching` and manages aggregate repository status shared between the Finder extension and main app.
+
+**Responsibilities:**
+- Persist `RepoStatusSummary` entries to App Group UserDefaults
+- Provide read access for main app menu bar display
+- Allow Finder extension to update status after refresh
+- Remove entries when repositories are deleted
+- Publish change notifications for UI updates
+
+**Thread Safety:**
+
+Read and write access use `queue.sync` and `queue.async` respectively, similar to other infrastructure stores.
+
+**Implementation Notes:**
+
+Summaries are stored as JSON in the shared App Group container with key `repoStatusSummaries`. The extension updates this cache after each `git status` refresh, computing the aggregate status and branch ahead/behind info.
+
+**Example Usage:**
+
+```swift
+// In Finder extension after status refresh
+let cache = SharedStatusCache.shared
+let summary = RepoStatusSummary(
+    path: repoPath,
+    status: aggregateStatus,
+    commitsAhead: branchInfo.ahead
+)
+cache.update(summary)
+
+// In main app for menu bar
+let summaries = SharedStatusCache.shared.summaries
+for summary in summaries {
+    // Display repo with status icon
+}
+```
+
 ## Notifications
 
 The infrastructure layer publishes these notifications:
 
 - **repositoriesDidChange**: Posted on main thread when repositories are added/removed
 - **settingsDidChange**: Posted on main thread when settings are updated
+- **statusCacheDidChange**: Posted on main thread when repository status summaries change
 
 Observers should register on the main queue to safely perform UI updates.
