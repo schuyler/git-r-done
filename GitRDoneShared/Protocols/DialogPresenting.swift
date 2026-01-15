@@ -5,10 +5,10 @@
 
 import Foundation
 
-public protocol DialogPresenting {
+/// Protocol for presenting dialogs to the user (commit messages, confirmations, errors)
+public protocol DialogPresenting: ErrorPresenting {
     func promptForCommitMessage() -> String?
     func confirm(message: String, confirmButton: String) -> Bool
     func showConflictReport(resolutions: [ConflictResolution])
-    func showError(_ message: String)
     func showInfo(_ message: String)
 }

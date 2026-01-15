@@ -5,7 +5,7 @@
 
 import Foundation
 
-public final class GitOperations {
+public final class GitOperations: GitValidating {
 
     private let executor: GitExecuting
 

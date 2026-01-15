@@ -35,7 +35,7 @@ The goal is to make Git accessible to non-technical users who are using Git-back
 Git-R-Done.app/
 ├── Git-R-Done/                   # Main application (menu bar)
 │   ├── GitRDoneApp.swift         # App entry, menu bar setup
-│   ├── MenuBarView.swift         # Menu bar popover UI
+│   ├── SettingsWindow.swift      # Settings window UI
 │   ├── ServicesProvider.swift    # macOS Services handler
 │   ├── OnboardingWindow.swift    # First-launch instructions
 │   └── Resources/
@@ -57,10 +57,10 @@ Git-R-Done.app/
 ### Component Responsibilities
 
 **Main App (Menu Bar):**
-- Lives in menu bar; no Dock icon, no standalone window (except first-launch)
+- Lives in menu bar; no Dock icon, no standalone window (except first-launch and settings)
 - First-launch onboarding window (enable extension in System Settings)
-- Menu bar popover for managing watched repositories
-- Settings: notifications toggle, auto-push toggle
+- Menu bar dropdown menu (Settings, About, Quit)
+- Settings window for managing watched repositories and auto-push toggle
 - Register and handle macOS Services for adding repos
 - Persist configuration via App Groups (shared UserDefaults suite)
 
@@ -88,29 +88,39 @@ Git-R-Done.app/
 
 ## User Interface
 
-### Menu Bar Popover
+### Menu Bar Menu
 
 ```
 ┌─────────────────────────────┐
-│ Git-R-Done                  │
-├─────────────────────────────┤
-│ Watched Repositories:       │
-│   📁 Documents/ProjectX   ✕ │
-│   📁 Shared/TeamDocs      ✕ │
-│   + Add Repository...       │
-├─────────────────────────────┤
-│ ☑ Notifications             │
-│ ☑ Auto-push after commit    │
+│ Settings...            ⌘,  │
 ├─────────────────────────────┤
 │ About Git-R-Done            │
-│ Quit                        │
+│ Quit Git-R-Done        ⌘Q  │
 └─────────────────────────────┘
 ```
 
-- Repository list shows folder names with remove (✕) buttons
+A minimal NSMenu dropdown following standard macOS conventions.
+
+### Settings Window
+
+```
+┌─────────────────────────────────────────┐
+│ Git-R-Done Settings                     │
+├─────────────────────────────────────────┤
+│ Watched Repositories:                   │
+│ ┌─────────────────────────────────────┐ │
+│ │ 📁 Documents/ProjectX            ✕  │ │
+│ │ 📁 Shared/TeamDocs               ✕  │ │
+│ └─────────────────────────────────────┘ │
+│ [+ Add Repository...]                   │
+│                                         │
+│ ☑ Auto-push after commit                │
+└─────────────────────────────────────────┘
+```
+
+- Repository list shows folder paths with remove (✕) buttons
 - "Add Repository..." opens folder picker, validates Git repo
-- Settings are simple toggles
-- No window chrome; popover anchored to menu bar icon
+- Notifications are controlled via System Settings (not in-app)
 
 ### First-Launch Onboarding
 
@@ -243,23 +253,22 @@ Git-R-Done registers the following Services:
 
 ### Notifications
 
-| Event | Notification Text | User-Controllable |
-|-------|-------------------|-------------------|
-| Push succeeded | "Pushed to [repo name]" | Yes (on by default) |
-| Pull succeeded (no changes) | *(silent)* | — |
-| Pull succeeded (with changes) | "Pulled N updated files from [repo name]" | Yes (on by default) |
-| Pull succeeded (with conflicts) | "Conflicts in [repo name] — local copies saved" | No (always shown) |
-| Push failed | "Failed to push [repo name]: [reason]" | No (always shown) |
-| Pull failed | "Failed to pull [repo name]: [reason]" | No (always shown) |
-| Repo added | "Now watching [repo name]" | Yes (on by default) |
+| Event | Notification Text |
+|-------|-------------------|
+| Push succeeded | "Pushed to [repo name]" |
+| Pull succeeded (no changes) | *(silent)* |
+| Pull succeeded (with changes) | "Pulled N updated files from [repo name]" |
+| Pull succeeded (with conflicts) | "Conflicts in [repo name] — local copies saved" |
+| Push failed | "Failed to push [repo name]: [reason]" |
+| Pull failed | "Failed to pull [repo name]: [reason]" |
+| Repo added | "Now watching [repo name]" |
 
-The "Notifications" toggle in settings controls success notifications. Conflict and error notifications are mandatory.
+Notifications are controlled via System Settings → Notifications → Git-R-Done.
 
 ### Settings
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| Notifications | Show notifications for successful push/pull operations | On |
 | Auto-push after commit | Automatically push after each commit | On |
 
 ## Technical Decisions

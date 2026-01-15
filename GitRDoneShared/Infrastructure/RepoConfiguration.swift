@@ -5,7 +5,7 @@
 
 import Foundation
 
-public final class RepoConfiguration {
+public final class RepoConfiguration: RepoConfiguring {
 
     public static let shared = RepoConfiguration()
 

@@ -5,7 +5,7 @@
 
 import Foundation
 
-public final class SettingsStore {
+public final class SettingsStore: SettingsStoring {
 
     public static let shared = SettingsStore()
 
