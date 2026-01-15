@@ -1,6 +1,6 @@
 # Git-R-Done
 
-A macOS Finder extension for Git operations. Stage, commit, push, and pull directly from the Finder context menu.
+A macOS Finder extension to facilitate using a Git remote as a cloud-based file store. Stage, commit, push, and pull directly from the Finder context menu.
 
 ## Features
 
