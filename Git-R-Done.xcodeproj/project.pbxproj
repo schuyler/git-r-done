@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		52ED78A12F189E3400D591B4 /* GitRDoneExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 52ED78992F189E3400D591B4 /* GitRDoneExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		52ED78B62F189E7C00D591B4 /* GitRDoneShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */; };
+		52ED78C12F189E7C00D591B4 /* GitRDoneShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */; };
+		52ED78C22F189E7C00D591B4 /* GitRDoneShared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		52ED78792F189D5200D591B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,13 +28,86 @@
 			remoteGlobalIDString = 52ED78662F189D5100D591B4;
 			remoteInfo = "Git-R-Done";
 		};
+		52ED789F2F189E3400D591B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 52ED78982F189E3400D591B4;
+			remoteInfo = GitRDoneExtension;
+		};
+		52ED78B72F189E7C00D591B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 52ED78AB2F189E7C00D591B4;
+			remoteInfo = GitRDoneShared;
+		};
+		52ED78B92F189E7C00D591B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 52ED78662F189D5100D591B4;
+			remoteInfo = "Git-R-Done";
+		};
+		52ED78BF2F189E7C00D591B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 52ED78AB2F189E7C00D591B4;
+			remoteInfo = GitRDoneShared;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		52ED78A62F189E3400D591B4 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				52ED78A12F189E3400D591B4 /* GitRDoneExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78C72F189E7C00D591B4 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				52ED78C22F189E7C00D591B4 /* GitRDoneShared.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		52ED78672F189D5100D591B4 /* Git-R-Done.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Git-R-Done.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		52ED78782F189D5200D591B4 /* Git-R-DoneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Git-R-DoneTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		52ED78822F189D5200D591B4 /* Git-R-DoneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Git-R-DoneUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		52ED78992F189E3400D591B4 /* GitRDoneExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GitRDoneExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GitRDoneShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		52ED78B52F189E7C00D591B4 /* GitRDoneSharedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GitRDoneSharedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		52ED78A22F189E3400D591B4 /* Exceptions for "GitRDoneExtension" folder in "GitRDoneExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 52ED78982F189E3400D591B4 /* GitRDoneExtension */;
+		};
+		52ED78C32F189E7C00D591B4 /* Exceptions for "GitRDoneShared" folder in "GitRDoneShared" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			publicHeaders = (
+				GitRDoneShared.h,
+			);
+			target = 52ED78AB2F189E7C00D591B4 /* GitRDoneShared */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		52ED78692F189D5100D591B4 /* Git-R-Done */ = {
@@ -45,6 +125,27 @@
 			path = "Git-R-DoneUITests";
 			sourceTree = "<group>";
 		};
+		52ED789A2F189E3400D591B4 /* GitRDoneExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				52ED78A22F189E3400D591B4 /* Exceptions for "GitRDoneExtension" folder in "GitRDoneExtension" target */,
+			);
+			path = GitRDoneExtension;
+			sourceTree = "<group>";
+		};
+		52ED78AD2F189E7C00D591B4 /* GitRDoneShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				52ED78C32F189E7C00D591B4 /* Exceptions for "GitRDoneShared" folder in "GitRDoneShared" target */,
+			);
+			path = GitRDoneShared;
+			sourceTree = "<group>";
+		};
+		52ED78BB2F189E7C00D591B4 /* GitRDoneSharedTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GitRDoneSharedTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +153,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52ED78C12F189E7C00D591B4 /* GitRDoneShared.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -69,6 +171,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		52ED78962F189E3400D591B4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78A92F189E7C00D591B4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78B22F189E7C00D591B4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				52ED78B62F189E7C00D591B4 /* GitRDoneShared.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +202,9 @@
 				52ED78692F189D5100D591B4 /* Git-R-Done */,
 				52ED787B2F189D5200D591B4 /* Git-R-DoneTests */,
 				52ED78852F189D5200D591B4 /* Git-R-DoneUITests */,
+				52ED789A2F189E3400D591B4 /* GitRDoneExtension */,
+				52ED78AD2F189E7C00D591B4 /* GitRDoneShared */,
+				52ED78BB2F189E7C00D591B4 /* GitRDoneSharedTests */,
 				52ED78682F189D5100D591B4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,11 +215,24 @@
 				52ED78672F189D5100D591B4 /* Git-R-Done.app */,
 				52ED78782F189D5200D591B4 /* Git-R-DoneTests.xctest */,
 				52ED78822F189D5200D591B4 /* Git-R-DoneUITests.xctest */,
+				52ED78992F189E3400D591B4 /* GitRDoneExtension.appex */,
+				52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */,
+				52ED78B52F189E7C00D591B4 /* GitRDoneSharedTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		52ED78A72F189E7C00D591B4 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
 		52ED78662F189D5100D591B4 /* Git-R-Done */ = {
@@ -102,10 +242,14 @@
 				52ED78632F189D5100D591B4 /* Sources */,
 				52ED78642F189D5100D591B4 /* Frameworks */,
 				52ED78652F189D5100D591B4 /* Resources */,
+				52ED78A62F189E3400D591B4 /* Embed Foundation Extensions */,
+				52ED78C72F189E7C00D591B4 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				52ED78A02F189E3400D591B4 /* PBXTargetDependency */,
+				52ED78C02F189E7C00D591B4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				52ED78692F189D5100D591B4 /* Git-R-Done */,
@@ -163,6 +307,75 @@
 			productReference = 52ED78822F189D5200D591B4 /* Git-R-DoneUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		52ED78982F189E3400D591B4 /* GitRDoneExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 52ED78A32F189E3400D591B4 /* Build configuration list for PBXNativeTarget "GitRDoneExtension" */;
+			buildPhases = (
+				52ED78952F189E3400D591B4 /* Sources */,
+				52ED78962F189E3400D591B4 /* Frameworks */,
+				52ED78972F189E3400D591B4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				52ED789A2F189E3400D591B4 /* GitRDoneExtension */,
+			);
+			name = GitRDoneExtension;
+			packageProductDependencies = (
+			);
+			productName = GitRDoneExtension;
+			productReference = 52ED78992F189E3400D591B4 /* GitRDoneExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		52ED78AB2F189E7C00D591B4 /* GitRDoneShared */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 52ED78C42F189E7C00D591B4 /* Build configuration list for PBXNativeTarget "GitRDoneShared" */;
+			buildPhases = (
+				52ED78A72F189E7C00D591B4 /* Headers */,
+				52ED78A82F189E7C00D591B4 /* Sources */,
+				52ED78A92F189E7C00D591B4 /* Frameworks */,
+				52ED78AA2F189E7C00D591B4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				52ED78AD2F189E7C00D591B4 /* GitRDoneShared */,
+			);
+			name = GitRDoneShared;
+			packageProductDependencies = (
+			);
+			productName = GitRDoneShared;
+			productReference = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		52ED78B42F189E7C00D591B4 /* GitRDoneSharedTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 52ED78C82F189E7C00D591B4 /* Build configuration list for PBXNativeTarget "GitRDoneSharedTests" */;
+			buildPhases = (
+				52ED78B12F189E7C00D591B4 /* Sources */,
+				52ED78B22F189E7C00D591B4 /* Frameworks */,
+				52ED78B32F189E7C00D591B4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				52ED78B82F189E7C00D591B4 /* PBXTargetDependency */,
+				52ED78BA2F189E7C00D591B4 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				52ED78BB2F189E7C00D591B4 /* GitRDoneSharedTests */,
+			);
+			name = GitRDoneSharedTests;
+			packageProductDependencies = (
+			);
+			productName = GitRDoneSharedTests;
+			productReference = 52ED78B52F189E7C00D591B4 /* GitRDoneSharedTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -181,6 +394,16 @@
 						TestTargetID = 52ED78662F189D5100D591B4;
 					};
 					52ED78812F189D5200D591B4 = {
+						CreatedOnToolsVersion = 16.1;
+						TestTargetID = 52ED78662F189D5100D591B4;
+					};
+					52ED78982F189E3400D591B4 = {
+						CreatedOnToolsVersion = 16.1;
+					};
+					52ED78AB2F189E7C00D591B4 = {
+						CreatedOnToolsVersion = 16.1;
+					};
+					52ED78B42F189E7C00D591B4 = {
 						CreatedOnToolsVersion = 16.1;
 						TestTargetID = 52ED78662F189D5100D591B4;
 					};
@@ -203,6 +426,9 @@
 				52ED78662F189D5100D591B4 /* Git-R-Done */,
 				52ED78772F189D5200D591B4 /* Git-R-DoneTests */,
 				52ED78812F189D5200D591B4 /* Git-R-DoneUITests */,
+				52ED78982F189E3400D591B4 /* GitRDoneExtension */,
+				52ED78AB2F189E7C00D591B4 /* GitRDoneShared */,
+				52ED78B42F189E7C00D591B4 /* GitRDoneSharedTests */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +449,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		52ED78802F189D5200D591B4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78972F189E3400D591B4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78AA2F189E7C00D591B4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78B32F189E7C00D591B4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +500,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		52ED78952F189E3400D591B4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78A82F189E7C00D591B4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		52ED78B12F189E7C00D591B4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +533,26 @@
 			isa = PBXTargetDependency;
 			target = 52ED78662F189D5100D591B4 /* Git-R-Done */;
 			targetProxy = 52ED78832F189D5200D591B4 /* PBXContainerItemProxy */;
+		};
+		52ED78A02F189E3400D591B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 52ED78982F189E3400D591B4 /* GitRDoneExtension */;
+			targetProxy = 52ED789F2F189E3400D591B4 /* PBXContainerItemProxy */;
+		};
+		52ED78B82F189E7C00D591B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 52ED78AB2F189E7C00D591B4 /* GitRDoneShared */;
+			targetProxy = 52ED78B72F189E7C00D591B4 /* PBXContainerItemProxy */;
+		};
+		52ED78BA2F189E7C00D591B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 52ED78662F189D5100D591B4 /* Git-R-Done */;
+			targetProxy = 52ED78B92F189E7C00D591B4 /* PBXContainerItemProxy */;
+		};
+		52ED78C02F189E7C00D591B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 52ED78AB2F189E7C00D591B4 /* GitRDoneShared */;
+			targetProxy = 52ED78BF2F189E7C00D591B4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -509,6 +797,162 @@
 			};
 			name = Release;
 		};
+		52ED78A42F189E3400D591B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GitRDoneExtension/GitRDoneExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EDUS6QCV5X;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GitRDoneExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GitRDoneExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "info.schuyler.Git-R-Done.GitRDoneExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		52ED78A52F189E3400D591B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GitRDoneExtension/GitRDoneExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EDUS6QCV5X;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GitRDoneExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GitRDoneExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "info.schuyler.Git-R-Done.GitRDoneExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		52ED78C52F189E7C00D591B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = EDUS6QCV5X;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = "info.schuyler.Git-R-Done.GitRDoneShared";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_VERSION = 5.0;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		52ED78C62F189E7C00D591B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = EDUS6QCV5X;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = "info.schuyler.Git-R-Done.GitRDoneShared";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_VERSION = 5.0;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		52ED78C92F189E7C00D591B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EDUS6QCV5X;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "info.schuyler.Git-R-Done.GitRDoneSharedTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Git-R-Done.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Git-R-Done";
+			};
+			name = Debug;
+		};
+		52ED78CA2F189E7C00D591B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EDUS6QCV5X;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "info.schuyler.Git-R-Done.GitRDoneSharedTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Git-R-Done.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Git-R-Done";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -544,6 +988,33 @@
 			buildConfigurations = (
 				52ED78932F189D5200D591B4 /* Debug */,
 				52ED78942F189D5200D591B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		52ED78A32F189E3400D591B4 /* Build configuration list for PBXNativeTarget "GitRDoneExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				52ED78A42F189E3400D591B4 /* Debug */,
+				52ED78A52F189E3400D591B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		52ED78C42F189E7C00D591B4 /* Build configuration list for PBXNativeTarget "GitRDoneShared" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				52ED78C52F189E7C00D591B4 /* Debug */,
+				52ED78C62F189E7C00D591B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		52ED78C82F189E7C00D591B4 /* Build configuration list for PBXNativeTarget "GitRDoneSharedTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				52ED78C92F189E7C00D591B4 /* Debug */,
+				52ED78CA2F189E7C00D591B4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
