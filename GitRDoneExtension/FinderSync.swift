@@ -124,15 +124,18 @@ class FinderSync: FIFinderSync {
         }
 
         let items = FIFinderSyncController.default().selectedItemURLs() ?? []
-        let isFile = items.count == 1 && !isDirectory(items.first!)
+        let allFiles = !items.isEmpty && items.allSatisfy { !isDirectory($0) }
+        let singleFile = items.count == 1 && allFiles
 
-        if isFile {
-            // File actions
+        if allFiles {
+            // File actions (single or multiple)
             menu.addItem(withTitle: "Stage", action: #selector(stageAction(_:)), keyEquivalent: "")
             menu.addItem(withTitle: "Unstage", action: #selector(unstageAction(_:)), keyEquivalent: "")
-            menu.addItem(withTitle: "Commit...", action: #selector(commitFileAction(_:)), keyEquivalent: "")
-            menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: "Revert", action: #selector(revertAction(_:)), keyEquivalent: "")
+            if singleFile {
+                menu.addItem(withTitle: "Commit...", action: #selector(commitFileAction(_:)), keyEquivalent: "")
+                menu.addItem(NSMenuItem.separator())
+                menu.addItem(withTitle: "Revert", action: #selector(revertAction(_:)), keyEquivalent: "")
+            }
         } else {
             // Folder actions
             menu.addItem(withTitle: "Pull", action: #selector(pullAction(_:)), keyEquivalent: "")
@@ -151,30 +154,36 @@ class FinderSync: FIFinderSync {
 
     @objc func stageAction(_ sender: AnyObject?) {
         guard let items = FIFinderSyncController.default().selectedItemURLs(),
-              let url = items.first,
-              let repoPath = findRepoPath(for: url) else { return }
+              let firstURL = items.first,
+              let repoPath = findRepoPath(for: firstURL) else { return }
 
-        let relativePath = getRelativePath(url, in: repoPath)
+        let relativePaths = items.map { getRelativePath($0, in: repoPath) }
 
         statusManager.performAction(in: repoPath) { [gitOps, dialogPresenter] in
-            let result = gitOps.stage(file: relativePath, in: repoPath)
-            if case .failure(let error) = result {
-                dialogPresenter.showError(error.localizedDescription)
+            for path in relativePaths {
+                let result = gitOps.stage(file: path, in: repoPath)
+                if case .failure(let error) = result {
+                    dialogPresenter.showError(error.localizedDescription)
+                    return
+                }
             }
         }
     }
 
     @objc func unstageAction(_ sender: AnyObject?) {
         guard let items = FIFinderSyncController.default().selectedItemURLs(),
-              let url = items.first,
-              let repoPath = findRepoPath(for: url) else { return }
+              let firstURL = items.first,
+              let repoPath = findRepoPath(for: firstURL) else { return }
 
-        let relativePath = getRelativePath(url, in: repoPath)
+        let relativePaths = items.map { getRelativePath($0, in: repoPath) }
 
         statusManager.performAction(in: repoPath) { [gitOps, dialogPresenter] in
-            let result = gitOps.unstage(file: relativePath, in: repoPath)
-            if case .failure(let error) = result {
-                dialogPresenter.showError(error.localizedDescription)
+            for path in relativePaths {
+                let result = gitOps.unstage(file: path, in: repoPath)
+                if case .failure(let error) = result {
+                    dialogPresenter.showError(error.localizedDescription)
+                    return
+                }
             }
         }
     }
