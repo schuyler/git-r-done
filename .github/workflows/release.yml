@@ -1,0 +1,347 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, Sign, Notarize, and Release
+    runs-on: macos-15
+
+    steps:
+      # ==================== SETUP ====================
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is on main branch
+        if: github.ref_type == 'tag'
+        run: |
+          echo "Verifying tag ${{ github.ref_name }} is on main branch..."
+          TAG_COMMIT=$(git rev-parse ${{ github.ref_name }})
+          if git merge-base --is-ancestor "$TAG_COMMIT" origin/main 2>/dev/null; then
+            echo "Tag is on main branch"
+          else
+            echo "::error::Tag ${{ github.ref_name }} is NOT on the main branch"
+            exit 1
+          fi
+
+      - name: Validate required secrets
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          MISSING=()
+          [[ -z "$APPLE_TEAM_ID" ]] && MISSING+=("APPLE_TEAM_ID")
+          [[ -z "$APPLE_CERTIFICATE_BASE64" ]] && MISSING+=("APPLE_CERTIFICATE_BASE64")
+          [[ -z "$APPLE_CERTIFICATE_PASSWORD" ]] && MISSING+=("APPLE_CERTIFICATE_PASSWORD")
+          [[ -z "$APPLE_ID" ]] && MISSING+=("APPLE_ID")
+          [[ -z "$APPLE_APP_PASSWORD" ]] && MISSING+=("APPLE_APP_PASSWORD")
+
+          if [[ ${#MISSING[@]} -gt 0 ]]; then
+            echo "::error::Missing required secrets: ${MISSING[*]}"
+            exit 1
+          fi
+          echo "All required secrets configured"
+
+      - name: Extract version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ -n "${{ github.event.inputs.version }}" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            echo "::error::No version specified"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Building version: $VERSION"
+
+      - name: Detect pre-release
+        run: |
+          if [[ "$VERSION" =~ -(beta|alpha|rc) ]]; then
+            echo "PRERELEASE=true" >> $GITHUB_ENV
+          else
+            echo "PRERELEASE=false" >> $GITHUB_ENV
+          fi
+
+      - name: Compute build number
+        run: |
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "Build number: $BUILD_NUMBER"
+
+      # ==================== TEST ====================
+
+      - name: Run tests before release
+        run: |
+          echo "Running tests..."
+          xcodebuild test \
+            -project Git-R-Done.xcodeproj \
+            -scheme Git-R-Done \
+            -destination 'platform=macOS' \
+            -derivedDataPath DerivedData
+          echo "All tests passed"
+
+      # ==================== CODE SIGNING ====================
+
+      - name: Setup code signing keychain
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "Setting up code signing keychain..."
+
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+          trap 'rm -f certificate.p12' EXIT
+
+          security import certificate.p12 \
+            -k build.keychain \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/productsign
+
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            build.keychain
+
+          echo "Available signing identities:"
+          security find-identity -v -p codesigning
+
+      # ==================== BUILD ====================
+
+      - name: Build and sign application
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "Building Git-R-Done..."
+          set -o pipefail
+
+          xcodebuild archive \
+            -project Git-R-Done.xcodeproj \
+            -scheme Git-R-Done \
+            -configuration Release \
+            -archivePath build/Git-R-Done.xcarchive \
+            -destination 'generic/platform=macOS' \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            CODE_SIGN_STYLE="Manual" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            ENABLE_HARDENED_RUNTIME=YES \
+            MARKETING_VERSION="$VERSION" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            | tee build.log
+
+          echo "Build completed"
+
+      - name: Extract application bundle
+        run: |
+          cp -R build/Git-R-Done.xcarchive/Products/Applications/Git-R-Done.app build/Git-R-Done.app
+          echo "Build contents:"
+          ls -lh build/
+
+      - name: Verify code signature
+        run: |
+          echo "Verifying code signature..."
+          codesign -vvv --deep --strict build/Git-R-Done.app
+
+          IDENTITY=$(codesign -dvv build/Git-R-Done.app 2>&1 | grep "Authority=Developer ID Application")
+          if [[ -z "$IDENTITY" ]]; then
+            echo "::error::App not signed with Developer ID"
+            exit 1
+          fi
+          echo "Verified: $IDENTITY"
+
+          # Verify Finder extension
+          EXTENSION_PATH="build/Git-R-Done.app/Contents/PlugIns/GitRDoneExtension.appex"
+          if [[ -d "$EXTENSION_PATH" ]]; then
+            echo "Verifying Finder extension signature..."
+            codesign -vvv --strict "$EXTENSION_PATH"
+            echo "Finder extension signature verified"
+          fi
+
+      # ==================== CREATE DMG ====================
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG installer
+        run: |
+          echo "Creating DMG..."
+
+          if create-dmg \
+            --volname "Git-R-Done" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "Git-R-Done.app" 150 190 \
+            --hide-extension "Git-R-Done.app" \
+            --app-drop-link 450 185 \
+            --no-internet-enable \
+            "build/Git-R-Done-${VERSION}.dmg" \
+            "build/Git-R-Done.app" 2>&1; then
+            echo "DMG created with create-dmg"
+          else
+            echo "Falling back to hdiutil..."
+            hdiutil create -volname "Git-R-Done" \
+              -srcfolder "build/Git-R-Done.app" \
+              -ov -format UDZO \
+              "build/Git-R-Done-${VERSION}.dmg"
+          fi
+
+          ls -lh "build/Git-R-Done-${VERSION}.dmg"
+
+      - name: Sign DMG
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "Signing DMG..."
+
+          IDENTITY=$(security find-identity -v -p codesigning build.keychain | \
+                     grep "Developer ID Application" | \
+                     grep "$APPLE_TEAM_ID" | \
+                     head -1 | \
+                     sed -E 's/.*"(.+)"/\1/')
+
+          if [[ -z "$IDENTITY" ]]; then
+            echo "::error::Could not find Developer ID certificate"
+            exit 1
+          fi
+
+          codesign --sign "$IDENTITY" \
+            --timestamp \
+            --force \
+            "build/Git-R-Done-${VERSION}.dmg"
+
+          echo "DMG signed"
+
+      - name: Verify DMG signature
+        run: |
+          codesign -vvv --strict "build/Git-R-Done-${VERSION}.dmg"
+          echo "DMG signature verified"
+
+      - name: Generate checksum
+        run: |
+          cd build
+          shasum -a 256 "Git-R-Done-${VERSION}.dmg" > "Git-R-Done-${VERSION}.dmg.sha256"
+          cat "Git-R-Done-${VERSION}.dmg.sha256"
+          CHECKSUM=$(cat "Git-R-Done-${VERSION}.dmg.sha256")
+          echo "CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
+
+      # ==================== NOTARIZATION ====================
+
+      - name: Submit for notarization and wait
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          echo "Submitting for notarization..."
+
+          xcrun notarytool submit "build/Git-R-Done-${VERSION}.dmg" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait \
+            --timeout 30m
+
+          echo "Notarization completed"
+
+      - name: Staple notarization ticket
+        run: |
+          echo "Stapling notarization ticket..."
+          xcrun stapler staple "build/Git-R-Done-${VERSION}.dmg"
+
+          echo "Validating stapled ticket..."
+          xcrun stapler validate "build/Git-R-Done-${VERSION}.dmg"
+
+          echo "Verifying Gatekeeper acceptance..."
+          spctl -a -vvv -t install "build/Git-R-Done-${VERSION}.dmg"
+
+          echo "DMG stapled and verified"
+
+      - name: Regenerate checksum after stapling
+        run: |
+          cd build
+          shasum -a 256 "Git-R-Done-${VERSION}.dmg" > "Git-R-Done-${VERSION}.dmg.sha256"
+          cat "Git-R-Done-${VERSION}.dmg.sha256"
+          CHECKSUM=$(cat "Git-R-Done-${VERSION}.dmg.sha256")
+          echo "CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
+
+      # ==================== RELEASE ====================
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: ${{ env.PRERELEASE }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', env.VERSION) }}
+          name: Git-R-Done ${{ env.VERSION }}
+          files: |
+            build/Git-R-Done-${{ env.VERSION }}.dmg
+            build/Git-R-Done-${{ env.VERSION }}.dmg.sha256
+          body: |
+            ## Git-R-Done ${{ env.VERSION }}
+
+            A macOS Finder extension for Git operations.
+
+            ### Installation
+
+            1. Download `Git-R-Done-${{ env.VERSION }}.dmg`
+            2. Open the DMG and drag Git-R-Done to Applications
+            3. Launch Git-R-Done from Applications
+            4. Enable the Finder extension in System Settings → Privacy & Security → Extensions → Added Extensions
+
+            ### Verification
+
+            This build is signed and notarized by Apple.
+
+            **SHA256 Checksum:**
+            ```
+            ${{ env.CHECKSUM }}
+            ```
+
+            Verify after download:
+            ```bash
+            shasum -a 256 Git-R-Done-${{ env.VERSION }}.dmg
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ==================== CLEANUP ====================
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          security delete-keychain build.keychain 2>/dev/null || true
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build.log
+          retention-days: 7
