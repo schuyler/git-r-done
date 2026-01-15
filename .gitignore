@@ -1,0 +1,46 @@
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Archives
+*.xcarchive
+
+# Provisioning profiles
+*.mobileprovision
+*.provisionprofile
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Code coverage
+*.gcda
+*.gcno
+*.profraw
+*.profdata
