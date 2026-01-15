@@ -6,12 +6,12 @@
 import Foundation
 import os.log
 
-enum Log {
+public enum Log {
     private static let subsystem = "info.schuyler.gitrdone"
 
-    static let git = Logger(subsystem: subsystem, category: "git")
-    static let status = Logger(subsystem: subsystem, category: "status")
-    static let finder = Logger(subsystem: subsystem, category: "finder")
-    static let config = Logger(subsystem: subsystem, category: "config")
-    static let conflict = Logger(subsystem: subsystem, category: "conflict")
+    public static let git = Logger(subsystem: subsystem, category: "git")
+    public static let status = Logger(subsystem: subsystem, category: "status")
+    public static let finder = Logger(subsystem: subsystem, category: "finder")
+    public static let config = Logger(subsystem: subsystem, category: "config")
+    public static let conflict = Logger(subsystem: subsystem, category: "conflict")
 }

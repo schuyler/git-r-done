@@ -78,11 +78,11 @@ public final class RepoConfiguration {
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(_repositories) else {
+        guard let data = try? JSONEncoder().encode(self._repositories) else {
             Log.config.error("Failed to encode repositories")
             return
         }
-        defaults.set(data, forKey: reposKey)
-        Log.config.info("Saved \(_repositories.count) repositories")
+        self.defaults.set(data, forKey: self.reposKey)
+        Log.config.info("Saved \(self._repositories.count) repositories")
     }
 }

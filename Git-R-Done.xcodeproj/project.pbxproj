@@ -11,6 +11,7 @@
 		52ED78B62F189E7C00D591B4 /* GitRDoneShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */; };
 		52ED78C12F189E7C00D591B4 /* GitRDoneShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */; };
 		52ED78C22F189E7C00D591B4 /* GitRDoneShared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		52ED78CB2F189F0000D591B4 /* GitRDoneShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52ED78AC2F189E7C00D591B4 /* GitRDoneShared.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +51,13 @@
 			remoteInfo = "Git-R-Done";
 		};
 		52ED78BF2F189E7C00D591B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 52ED78AB2F189E7C00D591B4;
+			remoteInfo = GitRDoneShared;
+		};
+		52ED78CC2F189F0000D591B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
 			proxyType = 1;
@@ -175,6 +183,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52ED78CB2F189F0000D591B4 /* GitRDoneShared.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -318,6 +327,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				52ED78CD2F189F0000D591B4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				52ED789A2F189E3400D591B4 /* GitRDoneExtension */,
@@ -554,6 +564,11 @@
 			target = 52ED78AB2F189E7C00D591B4 /* GitRDoneShared */;
 			targetProxy = 52ED78BF2F189E7C00D591B4 /* PBXContainerItemProxy */;
 		};
+		52ED78CD2F189F0000D591B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 52ED78AB2F189E7C00D591B4 /* GitRDoneShared */;
+			targetProxy = 52ED78CC2F189F0000D591B4 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -689,6 +704,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -716,6 +732,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
