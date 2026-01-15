@@ -205,7 +205,7 @@ class FinderSync: FIFinderSync {
                 case .success:
                     notifier.send(title: "Git-R-Done", body: "Pushed to \(repoName)")
                 case .failure(let error):
-                    notifier.sendAlways(title: "Push Failed", body: error.localizedDescription)
+                    notifier.send(title: "Push Failed", body: error.localizedDescription)
                 }
             }
         }
@@ -244,10 +244,10 @@ class FinderSync: FIFinderSync {
             case .success(let pullResult):
                 if !pullResult.conflicts.isEmpty {
                     // Handle conflicts
-                    let resolveResult = conflictHandler.resolveConflicts(pullResult.conflicts, in: repoPath)
+                    let resolveResult = conflictHandler.resolveConflicts(files: pullResult.conflicts, in: repoPath)
                     switch resolveResult {
                     case .success(let resolutions):
-                        notifier.sendAlways(title: "Conflicts in \(repoName)", body: "Local copies saved")
+                        notifier.send(title: "Conflicts in \(repoName)", body: "Local copies saved")
                         dialogPresenter.showConflictReport(resolutions: resolutions)
                     case .failure(let error):
                         dialogPresenter.showError("Failed to resolve conflicts: \(error.localizedDescription)")
@@ -257,7 +257,7 @@ class FinderSync: FIFinderSync {
                 }
 
             case .failure(let error):
-                notifier.sendAlways(title: "Pull Failed", body: error.localizedDescription)
+                notifier.send(title: "Pull Failed", body: error.localizedDescription)
             }
         }
     }
@@ -274,7 +274,7 @@ class FinderSync: FIFinderSync {
             case .success:
                 notifier.send(title: "Git-R-Done", body: "Pushed to \(repoName)")
             case .failure(let error):
-                notifier.sendAlways(title: "Push Failed", body: error.localizedDescription)
+                notifier.send(title: "Push Failed", body: error.localizedDescription)
             }
         }
     }
@@ -303,7 +303,7 @@ class FinderSync: FIFinderSync {
                 case .success:
                     notifier.send(title: "Git-R-Done", body: "Pushed to \(repoName)")
                 case .failure(let error):
-                    notifier.sendAlways(title: "Push Failed", body: error.localizedDescription)
+                    notifier.send(title: "Push Failed", body: error.localizedDescription)
                 }
             }
         }

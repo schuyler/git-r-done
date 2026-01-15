@@ -16,22 +16,46 @@ public final class ConflictHandler {
         self.fileManager = fileManager
 
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "yyyy-MM-dd"
+        self.dateFormatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
+    }
+
+    /// Generates a backup filename with conflict timestamp
+    /// Input: "path/to/document.xlsx", timestamp: "2025-01-14 15.30.45"
+    /// Output: "path/to/document (Conflict 2025-01-14 15.30.45).xlsx"
+    public func generateBackupName(for filePath: String, timestamp: String) -> String {
+        let nsPath = filePath as NSString
+        let directory = nsPath.deletingLastPathComponent
+        let fullFilename = nsPath.lastPathComponent
+        let ext = nsPath.pathExtension
+        let filename = (fullFilename as NSString).deletingPathExtension
+
+        let backupFilename: String
+        if ext.isEmpty {
+            backupFilename = "\(filename) (Conflict \(timestamp))"
+        } else {
+            backupFilename = "\(filename) (Conflict \(timestamp)).\(ext)"
+        }
+
+        if directory.isEmpty {
+            return backupFilename
+        } else {
+            return (directory as NSString).appendingPathComponent(backupFilename)
+        }
     }
 
     /// Resolves conflicts using "Keep Both" strategy:
-    /// 1. Save local version as "filename (Conflict YYYY-MM-DD).ext"
+    /// 1. Save local version as "filename (Conflict YYYY-MM-DD HH.mm.ss).ext"
     /// 2. Accept remote version (theirs)
     /// 3. Complete merge
     /// Returns list of conflict resolutions for user notification
-    public func resolveConflicts(_ files: [String], in repoPath: String) -> Result<[ConflictResolution], GitError> {
+    public func resolveConflicts(files: [String], in repoPath: String, date: Date = Date()) -> Result<[ConflictResolution], GitError> {
         var resolutions: [ConflictResolution] = []
 
         for file in files {
             let fullPath = (repoPath as NSString).appendingPathComponent(file)
 
             // Save local version with conflict suffix
-            if let backupResult = saveLocalCopy(originalPath: fullPath, repoPath: repoPath) {
+            if let backupResult = saveLocalCopy(originalPath: fullPath, repoPath: repoPath, date: date) {
                 resolutions.append(backupResult)
             }
         }
@@ -58,16 +82,17 @@ public final class ConflictHandler {
         return .success(resolutions)
     }
 
-    private func saveLocalCopy(originalPath: String, repoPath: String) -> ConflictResolution? {
+    private func saveLocalCopy(originalPath: String, repoPath: String, date: Date) -> ConflictResolution? {
         guard fileManager.fileExists(atPath: originalPath) else {
             Log.conflict.warning("File does not exist for backup: \(originalPath)")
             return nil
         }
 
+        let relativePath = String(originalPath.dropFirst(repoPath.count + 1))
         let url = URL(fileURLWithPath: originalPath)
         let filename = url.deletingPathExtension().lastPathComponent
         let ext = url.pathExtension
-        let dateString = dateFormatter.string(from: Date())
+        let dateString = dateFormatter.string(from: date)
 
         let backupFilename: String
         if ext.isEmpty {
@@ -76,17 +101,21 @@ public final class ConflictHandler {
             backupFilename = "\(filename) (Conflict \(dateString)).\(ext)"
         }
 
+        // Get the clean local version from HEAD (not the conflicted working copy)
+        let contentResult = gitOps.getFileContent(ref: "HEAD", file: relativePath, in: repoPath)
+
+        guard case .success(let contentData) = contentResult else {
+            Log.conflict.error("Failed to get local version from HEAD: \(relativePath)")
+            return nil
+        }
+
         // Save to temp directory first
         let tempDir = fileManager.temporaryDirectory
         let tempPath = tempDir.appendingPathComponent(UUID().uuidString).path
 
         do {
-            try fileManager.copyItem(atPath: originalPath, toPath: tempPath)
+            try contentData.write(to: URL(fileURLWithPath: tempPath))
             Log.conflict.info("Saved local copy to temp: \(tempPath)")
-
-            let relativePath = String(originalPath.dropFirst(repoPath.count + 1))
-            let relativeDir = (relativePath as NSString).deletingLastPathComponent
-            let backupRelativePath = relativeDir.isEmpty ? backupFilename : (relativeDir as NSString).appendingPathComponent(backupFilename)
 
             return ConflictResolution(
                 originalFile: (relativePath as NSString).lastPathComponent,

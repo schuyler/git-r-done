@@ -22,6 +22,30 @@ public final class GitOperations {
         return result.success
     }
 
+    public func status(for repoPath: String, timeout: TimeInterval = 30) -> Result<RepoStatus, GitError> {
+        guard executor.isGitAvailable() else {
+            return .failure(.gitNotInstalled)
+        }
+
+        let result = executor.execute(["status", "--porcelain=v2"], in: repoPath, timeout: timeout)
+
+        if result == .timedOut {
+            return .failure(.timedOut)
+        }
+
+        guard result.success else {
+            return .failure(.commandFailed(result.stderr))
+        }
+
+        let fileList = GitStatusParser.parse(result.stdout)
+        var files: [String: GitFileStatus] = [:]
+        for file in fileList {
+            files[file.path] = file
+        }
+        let status = RepoStatus(repoPath: repoPath, files: files, timestamp: Date())
+        return .success(status)
+    }
+
     public func getStatus(in repoPath: String) -> Result<[GitFileStatus], GitError> {
         guard FileManager.default.fileExists(atPath: repoPath) else {
             return .failure(.repoNotAccessible(repoPath))
@@ -58,10 +82,19 @@ public final class GitOperations {
     }
 
     public func unstage(file: String, in repoPath: String) -> Result<Void, GitError> {
+        // Try git restore --staged first (works for previously committed files)
         let result = executor.execute(["restore", "--staged", "--", file], in: repoPath)
 
-        if !result.success {
-            return .failure(.commandFailed(result.stderr))
+        if result.success {
+            return .success(())
+        }
+
+        // If restore fails, try git rm --cached (works for newly added files that were never committed)
+        Log.git.debug("restore --staged failed, trying rm --cached for: \(file)")
+        let rmResult = executor.execute(["rm", "--cached", "--", file], in: repoPath)
+
+        if !rmResult.success {
+            return .failure(.commandFailed(rmResult.stderr))
         }
         return .success(())
     }
@@ -147,6 +180,20 @@ public final class GitOperations {
         return .success(.success())
     }
 
+    public func acceptTheirs(file: String, in repoPath: String) -> Result<Void, GitError> {
+        let checkout = executor.execute(["checkout", "--theirs", "--", file], in: repoPath)
+        guard checkout.success else {
+            return .failure(.commandFailed(checkout.stderr))
+        }
+
+        let add = executor.execute(["add", "--", file], in: repoPath)
+        guard add.success else {
+            return .failure(.commandFailed(add.stderr))
+        }
+
+        return .success(())
+    }
+
     public func acceptTheirsAndComplete(files: [String], in repoPath: String) -> Result<Void, GitError> {
         for file in files {
             let checkoutResult = executor.execute(["checkout", "--theirs", "--", file], in: repoPath)
@@ -171,6 +218,17 @@ public final class GitOperations {
         }
 
         return .success(())
+    }
+
+    /// Gets file content from a specific git ref (e.g., HEAD, origin/main)
+    public func getFileContent(ref: String, file: String, in repoPath: String) -> Result<Data, GitError> {
+        let result = executor.execute(["show", "\(ref):\(file)"], in: repoPath)
+        if result.success {
+            // Use raw stdout data to preserve binary file content
+            return .success(result.stdoutData)
+        } else {
+            return .failure(.commandFailed(result.stderr))
+        }
     }
 
     public func getRepoName(at path: String) -> String {

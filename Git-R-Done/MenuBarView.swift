@@ -69,13 +69,6 @@ struct MenuBarView: View {
                 .padding(.vertical, 4)
 
             // Settings section
-            Toggle("Notifications", isOn: $settings.notificationsEnabled)
-                .onChange(of: settings.notificationsEnabled) { _, _ in
-                    saveSettings()
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 2)
-
             Toggle("Auto-push after commit", isOn: $settings.autoPushEnabled)
                 .onChange(of: settings.autoPushEnabled) { _, _ in
                     saveSettings()

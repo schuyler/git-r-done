@@ -42,6 +42,23 @@ public final class ShellGitExecutor: GitExecuting {
             return .failure(error.localizedDescription)
         }
 
+        // Read pipes asynchronously to prevent deadlock when pipe buffer fills
+        var stdoutData = Data()
+        var stderrData = Data()
+        let readGroup = DispatchGroup()
+
+        readGroup.enter()
+        DispatchQueue.global().async {
+            stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+            readGroup.leave()
+        }
+
+        readGroup.enter()
+        DispatchQueue.global().async {
+            stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+            readGroup.leave()
+        }
+
         let semaphore = DispatchSemaphore(value: 0)
         process.terminationHandler = { _ in semaphore.signal() }
 
@@ -50,11 +67,13 @@ public final class ShellGitExecutor: GitExecuting {
         if waitResult == .timedOut {
             Log.git.error("Command timed out after \(timeout)s")
             process.terminate()
+            // Wait for reads to complete even on timeout
+            readGroup.wait()
             return .timedOut
         }
 
-        let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-        let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        // Wait for reads to complete
+        readGroup.wait()
 
         let stdout = String(data: stdoutData, encoding: .utf8) ?? ""
         let stderr = String(data: stderrData, encoding: .utf8) ?? ""
@@ -62,7 +81,8 @@ public final class ShellGitExecutor: GitExecuting {
         let result = ShellResult(
             exitCode: process.terminationStatus,
             stdout: stdout,
-            stderr: stderr
+            stderr: stderr,
+            stdoutData: stdoutData
         )
 
         if !result.success {

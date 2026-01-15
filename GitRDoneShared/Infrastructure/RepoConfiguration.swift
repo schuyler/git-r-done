@@ -13,9 +13,12 @@ public final class RepoConfiguration {
     private let reposKey = "watchedRepositories"
     private let queue = DispatchQueue(label: "info.schuyler.gitrdone.repoconfig")
 
-    private var defaults: UserDefaults {
-        UserDefaults(suiteName: suiteName)!
-    }
+    private lazy var defaults: UserDefaults = {
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            fatalError("App Group '\(suiteName)' not configured. Add it in Signing & Capabilities.")
+        }
+        return defaults
+    }()
 
     private var _repositories: [WatchedRepository] = []
 
@@ -28,7 +31,7 @@ public final class RepoConfiguration {
     }
 
     public func load() {
-        queue.async { [self] in
+        queue.sync { [self] in
             guard let data = defaults.data(forKey: reposKey),
                   let repos = try? JSONDecoder().decode([WatchedRepository].self, from: data)
             else {
@@ -50,7 +53,9 @@ public final class RepoConfiguration {
             _repositories.append(repo)
             save()
             Log.config.info("Added repository: \(repo.path)")
-            NotificationCenter.default.post(name: .repositoriesDidChange, object: nil)
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .repositoriesDidChange, object: nil)
+            }
         }
     }
 
@@ -59,7 +64,9 @@ public final class RepoConfiguration {
             _repositories.removeAll { $0.id == id }
             save()
             Log.config.info("Removed repository with id: \(id)")
-            NotificationCenter.default.post(name: .repositoriesDidChange, object: nil)
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .repositoriesDidChange, object: nil)
+            }
         }
     }
 
@@ -68,7 +75,9 @@ public final class RepoConfiguration {
             _repositories.removeAll { $0.path == path }
             save()
             Log.config.info("Removed repository at path: \(path)")
-            NotificationCenter.default.post(name: .repositoriesDidChange, object: nil)
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .repositoriesDidChange, object: nil)
+            }
         }
     }
 

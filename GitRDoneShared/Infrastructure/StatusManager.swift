@@ -7,6 +7,29 @@ import Foundation
 
 public final class StatusManager: StatusManaging {
 
+    // MARK: - Static Methods
+
+    /// Converts an absolute file path to a path relative to the repository root.
+    /// - Parameters:
+    ///   - filePath: The absolute file path
+    ///   - repoPath: The repository root path
+    /// - Returns: The relative path, or the original path if not related
+    public static func makeRelativePath(_ filePath: String, relativeTo repoPath: String) -> String {
+        guard filePath.hasPrefix(repoPath) else {
+            return filePath
+        }
+
+        if filePath == repoPath {
+            return ""
+        }
+
+        // Drop repoPath plus the trailing "/"
+        let relativePath = String(filePath.dropFirst(repoPath.count + 1))
+        return relativePath
+    }
+
+    // MARK: - Properties
+
     private let gitOps: GitOperations
     private let queue = DispatchQueue(label: "info.schuyler.gitrdone.statusmanager")
     private var cache: [String: RepoStatus] = [:]
@@ -52,11 +75,9 @@ public final class StatusManager: StatusManaging {
     }
 
     public func performAction(in repoPath: String, action: @escaping () -> Void) {
-        queue.async {
+        queue.async { [weak self] in
             action()
-        }
-        // Invalidate after action completes
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            // Invalidate after action completes
             self?.invalidate(repoPath: repoPath)
         }
     }
@@ -107,7 +128,7 @@ public final class StatusManager: StatusManaging {
         }
 
         let filePath = url.path
-        let relativePath = String(filePath.dropFirst(repoPath.count + 1))
+        let relativePath = Self.makeRelativePath(filePath, relativeTo: repoPath)
 
         // Check if this is a file
         var isDirectory: ObjCBool = false

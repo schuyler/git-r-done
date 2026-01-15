@@ -5,7 +5,7 @@
 
 import Foundation
 
-public enum GitError: Error, Equatable {
+public enum GitError: Error, Equatable, LocalizedError {
     case notARepository
     case gitNotInstalled
     case commandFailed(String)
@@ -14,7 +14,7 @@ public enum GitError: Error, Equatable {
     case timedOut
     case repoNotAccessible(String)
 
-    public var localizedDescription: String {
+    public var errorDescription: String? {
         switch self {
         case .notARepository:
             return "Not a Git repository"

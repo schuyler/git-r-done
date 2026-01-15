@@ -13,9 +13,12 @@ public final class SettingsStore {
     private let settingsKey = "appSettings"
     private let queue = DispatchQueue(label: "info.schuyler.gitrdone.settings")
 
-    private var defaults: UserDefaults {
-        UserDefaults(suiteName: suiteName)!
-    }
+    private lazy var defaults: UserDefaults = {
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            fatalError("App Group '\(suiteName)' not configured. Add it in Signing & Capabilities.")
+        }
+        return defaults
+    }()
 
     private var _settings: AppSettings = AppSettings()
 
@@ -28,7 +31,7 @@ public final class SettingsStore {
     }
 
     public func load() {
-        queue.async { [self] in
+        queue.sync { [self] in
             guard let data = defaults.data(forKey: settingsKey),
                   let settings = try? JSONDecoder().decode(AppSettings.self, from: data)
             else {
@@ -45,7 +48,9 @@ public final class SettingsStore {
         queue.async { [self] in
             _settings = settings
             save()
-            NotificationCenter.default.post(name: .settingsDidChange, object: nil)
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .settingsDidChange, object: nil)
+            }
         }
     }
 

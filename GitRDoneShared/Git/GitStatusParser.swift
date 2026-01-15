@@ -48,7 +48,7 @@ public enum GitStatusParser {
 
     private static func parseChangedEntry(_ line: String) -> GitFileStatus? {
         // Format: "1 XY sub mH mI mW hH hI path"
-        // or:     "2 XY sub mH mI mW hH hI X path\torigPath"
+        // or:     "2 XY sub mH mI mW hH hI Xscore path\torigPath"
         let parts = line.components(separatedBy: " ")
         guard parts.count >= 9 else { return nil }
 
@@ -58,12 +58,17 @@ public enum GitStatusParser {
         let indexChar = xy.first!
         let worktreeChar = xy.last!
 
-        // For renamed files, path is at index 9 and may contain a tab
-        let pathStartIndex = 8
+        // For type 1 entries, path starts at index 8
+        // For type 2 entries (rename/copy), there's an extra Xscore field at index 8, path starts at index 9
+        let isType2 = line.hasPrefix("2 ")
+        let pathStartIndex = isType2 ? 9 : 8
+
+        guard parts.count > pathStartIndex else { return nil }
+
         var path = parts[pathStartIndex...].joined(separator: " ")
 
-        // Handle renamed files (type 2) - path format is "newPath\toldPath"
-        if line.hasPrefix("2 "), let tabIndex = path.firstIndex(of: "\t") {
+        // Handle renamed/copied files (type 2) - path format is "newPath\toldPath"
+        if isType2, let tabIndex = path.firstIndex(of: "\t") {
             path = String(path[..<tabIndex])
         }
 

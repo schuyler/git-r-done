@@ -17,8 +17,9 @@ public struct WatchedRepository: Codable, Identifiable, Equatable {
 
     public init(id: UUID = UUID(), path: String, dateAdded: Date = Date()) {
         self.id = id
-        self.path = (path as NSString).standardizingPath
-        self.displayName = URL(fileURLWithPath: path).lastPathComponent
+        let standardizedPath = (path as NSString).standardizingPath
+        self.path = standardizedPath
+        self.displayName = URL(fileURLWithPath: standardizedPath).lastPathComponent
         self.dateAdded = dateAdded
     }
 }
