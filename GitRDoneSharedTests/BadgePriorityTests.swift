@@ -11,6 +11,10 @@ struct BadgePriorityTests {
 
     // MARK: - Raw Value Tests
 
+    @Test func pendingHasRawValueNegativeOne() {
+        #expect(BadgePriority.pending.rawValue == -1)
+    }
+
     @Test func aheadHasCorrectRawValue() {
         #expect(BadgePriority.ahead.rawValue == 1)
     }
@@ -37,6 +41,10 @@ struct BadgePriorityTests {
 
     // MARK: - Priority Ordering Tests
 
+    @Test func priorityOrdering_pendingIsLessThanClean() {
+        #expect(BadgePriority.pending < BadgePriority.clean)
+    }
+
     @Test func priorityOrdering_cleanIsLessThanAhead() {
         #expect(BadgePriority.clean < BadgePriority.ahead)
     }
@@ -58,6 +66,7 @@ struct BadgePriorityTests {
     }
 
     @Test func priorityOrdering_fullChain() {
+        #expect(BadgePriority.pending < BadgePriority.clean)
         #expect(BadgePriority.clean < BadgePriority.ahead)
         #expect(BadgePriority.ahead < BadgePriority.untracked)
         #expect(BadgePriority.untracked < BadgePriority.staged)
@@ -66,6 +75,10 @@ struct BadgePriorityTests {
     }
 
     // MARK: - Badge Identifier Tests
+
+    @Test func pendingBadgeIdentifierReturnsEmptyString() {
+        #expect(BadgePriority.pending.badgeIdentifier == "")
+    }
 
     @Test func aheadBadgeIdentifierReturnsAhead() {
         #expect(BadgePriority.ahead.badgeIdentifier == "Ahead")
@@ -92,6 +105,13 @@ struct BadgePriorityTests {
     }
 
     // MARK: - Codable Tests
+
+    @Test func codableRoundTrip_pending() throws {
+        let original = BadgePriority.pending
+        let encoded = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(BadgePriority.self, from: encoded)
+        #expect(decoded == original)
+    }
 
     @Test func codableRoundTrip_clean() throws {
         let original = BadgePriority.clean
@@ -122,7 +142,7 @@ struct BadgePriorityTests {
     }
 
     @Test func codableRoundTrip_allCases() throws {
-        let allCases: [BadgePriority] = [.clean, .ahead, .untracked, .staged, .modified, .conflict]
+        let allCases: [BadgePriority] = [.pending, .clean, .ahead, .untracked, .staged, .modified, .conflict]
         for original in allCases {
             let encoded = try JSONEncoder().encode(original)
             let decoded = try JSONDecoder().decode(BadgePriority.self, from: encoded)

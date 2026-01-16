@@ -6,6 +6,7 @@
 import Foundation
 
 public enum BadgePriority: Int, Comparable, Codable {
+    case pending = -1  // Status not yet scanned
     case clean = 0
     case ahead = 1
     case untracked = 2
@@ -19,6 +20,7 @@ public enum BadgePriority: Int, Comparable, Codable {
 
     public var badgeIdentifier: String {
         switch self {
+        case .pending: return ""
         case .clean: return ""
         case .ahead: return "Ahead"
         case .untracked: return "Untracked"

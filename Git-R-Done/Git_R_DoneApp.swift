@@ -12,21 +12,52 @@ import GitRDoneShared
 
 @Observable
 final class MenuBarViewModel {
+    private let repoConfiguration: RepoConfiguring
+    private let statusCache: StatusCaching
+    private var observers: [Any] = []
+
     var summaries: [RepoStatusSummary] = []
 
-    init() {
+    init(
+        repoConfiguration: RepoConfiguring = RepoConfiguration.shared,
+        statusCache: StatusCaching = SharedStatusCache.shared
+    ) {
+        self.repoConfiguration = repoConfiguration
+        self.statusCache = statusCache
         loadSummaries()
-        NotificationCenter.default.addObserver(
-            forName: .statusCacheDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.loadSummaries()
-        }
+
+        observers.append(
+            NotificationCenter.default.addObserver(
+                forName: .statusCacheDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.loadSummaries()
+            }
+        )
+
+        observers.append(
+            NotificationCenter.default.addObserver(
+                forName: .repositoriesDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.loadSummaries()
+            }
+        )
+    }
+
+    deinit {
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
     }
 
     func loadSummaries() {
-        summaries = SharedStatusCache.shared.summaries
+        summaries = repoConfiguration.repositories.map { repo in
+            if let cached = statusCache.summary(for: repo.path) {
+                return cached
+            }
+            return RepoStatusSummary(path: repo.path, status: .pending)
+        }
     }
 }
 
@@ -97,6 +128,7 @@ struct Git_R_DoneApp: App {
     @ViewBuilder
     private func statusIcon(for priority: BadgePriority) -> some View {
         let (symbol, color): (String, Color) = switch priority {
+        case .pending: ("ellipsis.circle", .gray)
         case .clean: ("checkmark.circle.fill", .green)
         case .ahead: ("arrow.up.circle.fill", .blue)
         case .untracked: ("questionmark.circle", .gray)

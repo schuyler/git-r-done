@@ -89,11 +89,11 @@ struct SettingsView: View {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.message = "Select a Git repository folder"
+        panel.allowsMultipleSelection = true
+        panel.message = "Select one or more Git repository folders"
 
-        if panel.runModal() == .OK, let url = panel.url {
-            viewModel.addRepository(url: url)
+        if panel.runModal() == .OK {
+            viewModel.addRepositories(urls: panel.urls)
         }
     }
 }

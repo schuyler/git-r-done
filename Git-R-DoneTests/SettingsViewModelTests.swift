@@ -10,7 +10,7 @@ import Foundation
 
 // MARK: - Mock Dependencies
 
-final class MockRepoConfiguration: RepoConfiguring {
+private final class MockRepoConfiguration: RepoConfiguring {
     var repositories: [WatchedRepository] = []
     var addedRepos: [WatchedRepository] = []
     var removedIds: [UUID] = []
@@ -30,7 +30,7 @@ final class MockRepoConfiguration: RepoConfiguring {
     }
 }
 
-final class MockSettingsStore: SettingsStoring {
+private final class MockSettingsStore: SettingsStoring {
     var settings: AppSettings = AppSettings()
     var updatedSettings: [AppSettings] = []
 
@@ -40,7 +40,7 @@ final class MockSettingsStore: SettingsStoring {
     }
 }
 
-final class MockGitValidator: GitValidating {
+private final class MockGitValidator: GitValidating {
     var validPaths: Set<String> = []
 
     func isGitRepository(at path: String) -> Bool {
@@ -48,11 +48,30 @@ final class MockGitValidator: GitValidating {
     }
 }
 
-final class MockErrorPresenter: ErrorPresenting {
+private final class MockErrorPresenter: ErrorPresenting {
     var shownErrors: [String] = []
 
     func showError(_ message: String) {
         shownErrors.append(message)
+    }
+}
+
+private final class MockStatusCache: StatusCaching {
+    var summaries: [RepoStatusSummary] = []
+    var removedPaths: [String] = []
+
+    func update(_ summary: RepoStatusSummary) {
+        summaries.removeAll { $0.path == summary.path }
+        summaries.append(summary)
+    }
+
+    func remove(path: String) {
+        removedPaths.append(path)
+        summaries.removeAll { $0.path == path }
+    }
+
+    func summary(for path: String) -> RepoStatusSummary? {
+        summaries.first { $0.path == path }
     }
 }
 
@@ -71,11 +90,12 @@ struct SettingsViewModelTests {
             repoConfiguration: repoConfig,
             settingsStore: MockSettingsStore(),
             gitValidator: gitValidator,
-            errorPresenter: MockErrorPresenter()
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
         )
 
         let url = URL(fileURLWithPath: "/path/to/repo")
-        viewModel.addRepository(url: url)
+        viewModel.addRepositories(urls: [url])
 
         #expect(repoConfig.addedRepos.count == 1)
         #expect(repoConfig.addedRepos.first?.path == "/path/to/repo")
@@ -92,11 +112,12 @@ struct SettingsViewModelTests {
             repoConfiguration: repoConfig,
             settingsStore: MockSettingsStore(),
             gitValidator: gitValidator,
-            errorPresenter: errorPresenter
+            errorPresenter: errorPresenter,
+            statusCache: MockStatusCache()
         )
 
         let url = URL(fileURLWithPath: "/not/a/repo")
-        viewModel.addRepository(url: url)
+        viewModel.addRepositories(urls: [url])
 
         #expect(repoConfig.addedRepos.isEmpty)
         #expect(errorPresenter.shownErrors.count == 1)
@@ -116,33 +137,38 @@ struct SettingsViewModelTests {
             repoConfiguration: repoConfig,
             settingsStore: MockSettingsStore(),
             gitValidator: gitValidator,
-            errorPresenter: MockErrorPresenter()
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
         )
 
         let url = URL(fileURLWithPath: "/existing/repo")
-        viewModel.addRepository(url: url)
+        viewModel.addRepositories(urls: [url])
 
         // Should not add duplicate
         #expect(repoConfig.addedRepos.isEmpty)
     }
 
-    @Test("Removing a repository calls remove on configuration")
+    @Test("Removing a repository calls remove on configuration and cleans up status cache")
     func removeRepository() {
         let repoConfig = MockRepoConfiguration()
         let repo = WatchedRepository(path: "/path/to/repo")
         repoConfig.repositories = [repo]
+        let statusCache = MockStatusCache()
 
         let viewModel = SettingsViewModel(
             repoConfiguration: repoConfig,
             settingsStore: MockSettingsStore(),
             gitValidator: MockGitValidator(),
-            errorPresenter: MockErrorPresenter()
+            errorPresenter: MockErrorPresenter(),
+            statusCache: statusCache
         )
 
         viewModel.removeRepository(id: repo.id)
 
         #expect(repoConfig.removedIds.count == 1)
         #expect(repoConfig.removedIds.first == repo.id)
+        #expect(statusCache.removedPaths.count == 1)
+        #expect(statusCache.removedPaths.first == "/path/to/repo")
     }
 
     @Test("Toggling auto-push persists the setting")
@@ -154,7 +180,8 @@ struct SettingsViewModelTests {
             repoConfiguration: MockRepoConfiguration(),
             settingsStore: settingsStore,
             gitValidator: MockGitValidator(),
-            errorPresenter: MockErrorPresenter()
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
         )
 
         #expect(viewModel.autoPushEnabled == false)
@@ -176,7 +203,8 @@ struct SettingsViewModelTests {
             repoConfiguration: repoConfig,
             settingsStore: MockSettingsStore(),
             gitValidator: MockGitValidator(),
-            errorPresenter: MockErrorPresenter()
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
         )
 
         #expect(viewModel.repositories.count == 2)
@@ -188,11 +216,116 @@ struct SettingsViewModelTests {
             repoConfiguration: MockRepoConfiguration(),
             settingsStore: MockSettingsStore(),
             gitValidator: MockGitValidator(),
-            errorPresenter: MockErrorPresenter()
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
         )
 
         // Should not throw or cause side effects
         viewModel.refresh()
         viewModel.refresh()
+    }
+
+    // MARK: - Multiple Repository Tests
+
+    @Test("Adding multiple valid repositories succeeds")
+    func addMultipleValidRepositories() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/repo1", "/repo2", "/repo3"]
+
+        let viewModel = SettingsViewModel(
+            repoConfiguration: repoConfig,
+            settingsStore: MockSettingsStore(),
+            gitValidator: gitValidator,
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
+        )
+
+        let urls = [
+            URL(fileURLWithPath: "/repo1"),
+            URL(fileURLWithPath: "/repo2"),
+            URL(fileURLWithPath: "/repo3")
+        ]
+        viewModel.addRepositories(urls: urls)
+
+        #expect(repoConfig.addedRepos.count == 3)
+    }
+
+    @Test("Adding mix of valid and invalid repositories shows single error")
+    func addMixedRepositories() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/valid1", "/valid2"]
+        let errorPresenter = MockErrorPresenter()
+
+        let viewModel = SettingsViewModel(
+            repoConfiguration: repoConfig,
+            settingsStore: MockSettingsStore(),
+            gitValidator: gitValidator,
+            errorPresenter: errorPresenter,
+            statusCache: MockStatusCache()
+        )
+
+        let urls = [
+            URL(fileURLWithPath: "/valid1"),
+            URL(fileURLWithPath: "/invalid1"),
+            URL(fileURLWithPath: "/valid2"),
+            URL(fileURLWithPath: "/invalid2")
+        ]
+        viewModel.addRepositories(urls: urls)
+
+        #expect(repoConfig.addedRepos.count == 2)
+        #expect(errorPresenter.shownErrors.count == 1)
+        #expect(errorPresenter.shownErrors.first?.contains("invalid1") == true)
+        #expect(errorPresenter.shownErrors.first?.contains("invalid2") == true)
+    }
+
+    @Test("Adding multiple invalid repositories shows batched error")
+    func addMultipleInvalidRepositories() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        // No valid paths
+        let errorPresenter = MockErrorPresenter()
+
+        let viewModel = SettingsViewModel(
+            repoConfiguration: repoConfig,
+            settingsStore: MockSettingsStore(),
+            gitValidator: gitValidator,
+            errorPresenter: errorPresenter,
+            statusCache: MockStatusCache()
+        )
+
+        let urls = [
+            URL(fileURLWithPath: "/invalid1"),
+            URL(fileURLWithPath: "/invalid2"),
+            URL(fileURLWithPath: "/invalid3")
+        ]
+        viewModel.addRepositories(urls: urls)
+
+        #expect(repoConfig.addedRepos.isEmpty)
+        #expect(errorPresenter.shownErrors.count == 1)
+        // Should contain "not Git repositories" (plural)
+        #expect(errorPresenter.shownErrors.first?.contains("not Git repositories") == true)
+    }
+
+    @Test("Refresh updates repositories from configuration")
+    func refreshUpdatesRepositories() {
+        let repoConfig = MockRepoConfiguration()
+
+        let viewModel = SettingsViewModel(
+            repoConfiguration: repoConfig,
+            settingsStore: MockSettingsStore(),
+            gitValidator: MockGitValidator(),
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
+        )
+
+        #expect(viewModel.repositories.isEmpty)
+
+        // Simulate external change to configuration
+        repoConfig.repositories = [WatchedRepository(path: "/new/repo")]
+        viewModel.refresh()
+
+        #expect(viewModel.repositories.count == 1)
     }
 }
