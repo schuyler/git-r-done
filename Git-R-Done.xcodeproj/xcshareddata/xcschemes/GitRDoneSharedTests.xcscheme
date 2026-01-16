@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "GitRDoneShared"
+               BlueprintIdentifier = "52ED78AB2F189E7C00D591B4"
                BuildableName = "GitRDoneShared.framework"
                BlueprintName = "GitRDoneShared"
                ReferencedContainer = "container:Git-R-Done.xcodeproj">
@@ -35,7 +35,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "GitRDoneSharedTests"
+               BlueprintIdentifier = "52ED78B42F189E7C00D591B4"
                BuildableName = "GitRDoneSharedTests.xctest"
                BlueprintName = "GitRDoneSharedTests"
                ReferencedContainer = "container:Git-R-Done.xcodeproj">

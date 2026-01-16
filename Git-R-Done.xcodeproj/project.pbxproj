@@ -43,13 +43,6 @@
 			remoteGlobalIDString = 52ED78AB2F189E7C00D591B4;
 			remoteInfo = GitRDoneShared;
 		};
-		52ED78B92F189E7C00D591B4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 52ED78662F189D5100D591B4;
-			remoteInfo = "Git-R-Done";
-		};
 		52ED78BF2F189E7C00D591B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 52ED785F2F189D5100D591B4 /* Project object */;
@@ -551,11 +544,6 @@
 			isa = PBXTargetDependency;
 			target = 52ED78AB2F189E7C00D591B4 /* GitRDoneShared */;
 			targetProxy = 52ED78B72F189E7C00D591B4 /* PBXContainerItemProxy */;
-		};
-		52ED78BA2F189E7C00D591B4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 52ED78662F189D5100D591B4 /* Git-R-Done */;
-			targetProxy = 52ED78B92F189E7C00D591B4 /* PBXContainerItemProxy */;
 		};
 		52ED78C02F189E7C00D591B4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
