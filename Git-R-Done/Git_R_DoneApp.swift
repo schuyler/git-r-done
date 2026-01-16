@@ -14,16 +14,22 @@ import GitRDoneShared
 final class MenuBarViewModel {
     private let repoConfiguration: RepoConfiguring
     private let statusCache: StatusCaching
+    private let gitValidator: GitValidating
+    private let errorPresenter: ErrorPresenting
     private var observers: [Any] = []
 
     var summaries: [RepoStatusSummary] = []
 
     init(
         repoConfiguration: RepoConfiguring = RepoConfiguration.shared,
-        statusCache: StatusCaching = SharedStatusCache.shared
+        statusCache: StatusCaching = SharedStatusCache.shared,
+        gitValidator: GitValidating = GitOperations(),
+        errorPresenter: ErrorPresenting = AppleScriptDialogPresenter()
     ) {
         self.repoConfiguration = repoConfiguration
         self.statusCache = statusCache
+        self.gitValidator = gitValidator
+        self.errorPresenter = errorPresenter
         loadSummaries()
 
         observers.append(
@@ -59,6 +65,38 @@ final class MenuBarViewModel {
             return RepoStatusSummary(path: repo.path, status: .pending)
         }
     }
+
+    func addRepositories(urls: [URL]) {
+        var invalidPaths: [String] = []
+
+        for url in urls {
+            let path = (url.path as NSString).standardizingPath
+
+            // Skip if already added
+            if repoConfiguration.contains(path: path) {
+                continue
+            }
+
+            // Validate it's a git repository
+            guard gitValidator.isGitRepository(at: path) else {
+                invalidPaths.append(url.lastPathComponent)
+                continue
+            }
+
+            let repo = WatchedRepository(path: path)
+            repoConfiguration.add(repo)
+        }
+
+        if !invalidPaths.isEmpty {
+            let message = invalidPaths.count == 1
+                ? "'\(invalidPaths[0])' is not a Git repository."
+                : "The following folders are not Git repositories:\n\(invalidPaths.joined(separator: "\n"))"
+            errorPresenter.showError(message)
+        }
+
+        // Refresh summaries after adding
+        loadSummaries()
+    }
 }
 
 // MARK: - App Entry Point
@@ -91,6 +129,10 @@ struct Git_R_DoneApp: App {
             }
 
             Divider()
+
+            Button("+ Add Repository...") {
+                showFolderPicker()
+            }
 
             Button("Settings...") {
                 openWindow(id: "settings")
@@ -142,5 +184,18 @@ struct Git_R_DoneApp: App {
 
     private func openInFinder(path: String) {
         NSWorkspace.shared.open(URL(fileURLWithPath: path))
+    }
+
+    private func showFolderPicker() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.message = "Select a Git repository folder"
+        panel.prompt = "Add"
+
+        if panel.runModal() == .OK {
+            menuViewModel.addRepositories(urls: panel.urls)
+        }
     }
 }

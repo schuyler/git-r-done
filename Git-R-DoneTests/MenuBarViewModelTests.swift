@@ -12,12 +12,16 @@ import Foundation
 
 private final class MockRepoConfiguration: RepoConfiguring {
     var repositories: [WatchedRepository] = []
+    var addedRepos: [WatchedRepository] = []
+    var removedIds: [UUID] = []
 
     func add(_ repo: WatchedRepository) {
+        addedRepos.append(repo)
         repositories.append(repo)
     }
 
     func remove(id: UUID) {
+        removedIds.append(id)
         repositories.removeAll { $0.id == id }
     }
 
@@ -40,6 +44,22 @@ private final class MockStatusCache: StatusCaching {
 
     func summary(for path: String) -> RepoStatusSummary? {
         summaries.first { $0.path == path }
+    }
+}
+
+private final class MockGitValidator: GitValidating {
+    var validPaths: Set<String> = []
+
+    func isGitRepository(at path: String) -> Bool {
+        validPaths.contains(path)
+    }
+}
+
+private final class MockErrorPresenter: ErrorPresenting {
+    var shownErrors: [String] = []
+
+    func showError(_ message: String) {
+        shownErrors.append(message)
     }
 }
 
@@ -193,5 +213,173 @@ struct MenuBarViewModelTests {
         // Should only show repo1, not orphaned
         #expect(viewModel.summaries.count == 1)
         #expect(viewModel.summaries.first?.path == "/repo1")
+    }
+
+    // MARK: - Add Repository Tests
+
+    @Test("Adding a valid git repository succeeds")
+    func addValidRepository() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/path/to/repo"]
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            errorPresenter: MockErrorPresenter()
+        )
+
+        let url = URL(fileURLWithPath: "/path/to/repo")
+        viewModel.addRepositories(urls: [url])
+
+        #expect(repoConfig.addedRepos.count == 1)
+        #expect(repoConfig.addedRepos.first?.path == "/path/to/repo")
+    }
+
+    @Test("Adding a non-git folder shows error")
+    func addInvalidRepository() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        // validPaths is empty - no valid git repos
+        let errorPresenter = MockErrorPresenter()
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            errorPresenter: errorPresenter
+        )
+
+        let url = URL(fileURLWithPath: "/not/a/repo")
+        viewModel.addRepositories(urls: [url])
+
+        #expect(repoConfig.repositories.isEmpty)
+        #expect(errorPresenter.shownErrors.count == 1)
+        #expect(errorPresenter.shownErrors.first?.contains("not a Git repository") == true)
+    }
+
+    @Test("Adding a duplicate repository is ignored")
+    func addDuplicateRepository() {
+        let repoConfig = MockRepoConfiguration()
+        let existingRepo = WatchedRepository(path: "/existing/repo")
+        repoConfig.repositories = [existingRepo]
+
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/existing/repo"]
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            errorPresenter: MockErrorPresenter()
+        )
+
+        let url = URL(fileURLWithPath: "/existing/repo")
+        viewModel.addRepositories(urls: [url])
+
+        // Should not add duplicate (still just 1 repo)
+        #expect(repoConfig.repositories.count == 1)
+    }
+
+    @Test("Adding multiple valid repositories succeeds")
+    func addMultipleValidRepositories() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/repo1", "/repo2", "/repo3"]
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            errorPresenter: MockErrorPresenter()
+        )
+
+        let urls = [
+            URL(fileURLWithPath: "/repo1"),
+            URL(fileURLWithPath: "/repo2"),
+            URL(fileURLWithPath: "/repo3")
+        ]
+        viewModel.addRepositories(urls: urls)
+
+        #expect(repoConfig.addedRepos.count == 3)
+    }
+
+    @Test("Adding mix of valid and invalid shows batched error")
+    func addMixedRepositories() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/valid1", "/valid2"]
+        let errorPresenter = MockErrorPresenter()
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            errorPresenter: errorPresenter
+        )
+
+        let urls = [
+            URL(fileURLWithPath: "/valid1"),
+            URL(fileURLWithPath: "/invalid1"),
+            URL(fileURLWithPath: "/valid2"),
+            URL(fileURLWithPath: "/invalid2")
+        ]
+        viewModel.addRepositories(urls: urls)
+
+        #expect(repoConfig.addedRepos.count == 2)
+        #expect(errorPresenter.shownErrors.count == 1)
+        #expect(errorPresenter.shownErrors.first?.contains("invalid1") == true)
+        #expect(errorPresenter.shownErrors.first?.contains("invalid2") == true)
+    }
+
+    @Test("Adding multiple invalid repositories shows plural error message")
+    func addMultipleInvalidRepositories() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        // No valid paths
+        let errorPresenter = MockErrorPresenter()
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            errorPresenter: errorPresenter
+        )
+
+        let urls = [
+            URL(fileURLWithPath: "/invalid1"),
+            URL(fileURLWithPath: "/invalid2"),
+            URL(fileURLWithPath: "/invalid3")
+        ]
+        viewModel.addRepositories(urls: urls)
+
+        #expect(repoConfig.addedRepos.isEmpty)
+        #expect(errorPresenter.shownErrors.count == 1)
+        // Should contain "not Git repositories" (plural)
+        #expect(errorPresenter.shownErrors.first?.contains("not Git repositories") == true)
+    }
+
+    @Test("Summaries update after adding repository")
+    func summariesUpdateAfterAdd() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/new/repo"]
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            errorPresenter: MockErrorPresenter()
+        )
+
+        #expect(viewModel.summaries.isEmpty)
+
+        let url = URL(fileURLWithPath: "/new/repo")
+        viewModel.addRepositories(urls: [url])
+
+        #expect(viewModel.summaries.count == 1)
+        #expect(viewModel.summaries.first?.path == "/new/repo")
+        #expect(viewModel.summaries.first?.status == .pending)
     }
 }

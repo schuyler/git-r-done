@@ -34,21 +34,28 @@ The goal is to make Git accessible to non-technical users who are using Git-back
 ```
 Git-R-Done.app/
 ├── Git-R-Done/                   # Main application (menu bar)
-│   ├── GitRDoneApp.swift         # App entry, menu bar setup
-│   ├── SettingsWindow.swift      # Settings window UI
-│   ├── ServicesProvider.swift    # macOS Services handler
-│   ├── OnboardingWindow.swift    # First-launch instructions
-│   └── Resources/
-├── GitRDoneFinderExtension/      # Finder Sync Extension
+│   ├── Git_R_DoneApp.swift       # App entry, menu bar setup
+│   ├── SettingsView.swift        # Settings window UI
+│   ├── SettingsViewModel.swift   # Settings business logic
+│   ├── AppDelegate.swift         # App delegate, Services handler
+│   ├── OnboardingView.swift      # First-launch instructions
+│   └── Assets.xcassets/
+├── GitRDoneExtension/            # Finder Sync Extension
 │   ├── FinderSync.swift          # FIFinderSync subclass
-│   └── GitRDoneFinderExtension.entitlements
-├── Shared/                       # Shared framework/module
-│   ├── GitOperations.swift       # Shell wrapper for git CLI
-│   ├── GitStatusCache.swift      # Per-repo status caching
-│   ├── RepoConfiguration.swift   # Watched repo list (App Groups)
-│   ├── ConflictHandler.swift     # Conflict resolution logic
-│   ├── NotificationHelper.swift  # macOS notification handling
-│   └── DialogHelper.swift        # AppleScript dialog invocation
+│   └── GitRDoneExtension.entitlements
+├── GitRDoneShared/               # Shared framework
+│   ├── Git/
+│   │   ├── GitOperations.swift   # Shell wrapper for git CLI
+│   │   ├── GitStatusParser.swift # Parse git status output
+│   │   └── ConflictHandler.swift # Conflict resolution logic
+│   ├── Infrastructure/
+│   │   ├── StatusManager.swift   # Per-repo status caching
+│   │   ├── SharedStatusCache.swift # App Groups status persistence
+│   │   ├── RepoConfiguration.swift # Watched repo list
+│   │   ├── UserNotificationSender.swift # macOS notifications
+│   │   └── AppleScriptDialogPresenter.swift # Dialog invocation
+│   ├── Models/                   # Data types
+│   └── Protocols/                # Abstraction interfaces
 └── Git-R-Done.entitlements
 ```
 
@@ -74,14 +81,15 @@ Git-R-Done.app/
 - Post macOS notifications for operation results
 - Write repository status to shared cache for main app consumption
 
-**Shared Module:**
+**Shared Framework (GitRDoneShared):**
 - `GitOperations`: Executes `git` CLI commands, parses output
-- `GitStatusCache`: Caches `git status` results, invalidates on FSEvents or manual refresh
+- `GitStatusParser`: Parses `git status --porcelain=v2` output
+- `StatusManager`: Caches `git status` results, invalidates on FSEvents or manual refresh
 - `SharedStatusCache`: Persists aggregate repo status to App Groups for main app
 - `RepoConfiguration`: Reads/writes App Group UserDefaults
 - `ConflictHandler`: Implements "Keep Both" conflict resolution strategy
-- `NotificationHelper`: Posts macOS User Notifications
-- `DialogHelper`: Displays AppleScript dialogs, returns user input
+- `UserNotificationSender`: Posts macOS User Notifications
+- `AppleScriptDialogPresenter`: Displays AppleScript dialogs, returns user input
 
 ### Communication Model
 
@@ -99,6 +107,7 @@ Git-R-Done.app/
 │ ✓ TeamDocs                  │
 │ ! SharedRepo                │
 ├─────────────────────────────┤
+│ + Add Repository...         │
 │ Settings...            ⌘,  │
 ├─────────────────────────────┤
 │ About Git-R-Done            │
@@ -110,6 +119,7 @@ The menu bar dropdown displays watched repositories with status indicators:
 
 | Icon | Color | Status | Meaning |
 |------|-------|--------|---------|
+| ⋯ | Gray | Pending | Status not yet loaded |
 | ✓ | Green | Clean | In sync with remote |
 | ↑ | Blue | Ahead | Local commits to push |
 | ? | Gray | Untracked | New files not tracked |
@@ -125,8 +135,11 @@ Each repository shows its aggregate status (worst-case wins). Clicking a reposit
 │ No repositories             │
 │ Add one in Settings...      │
 ├─────────────────────────────┤
+│ + Add Repository...         │
 │ Settings...            ⌘,  │
-│ ...                         │
+├─────────────────────────────┤
+│ About Git-R-Done            │
+│ Quit Git-R-Done        ⌘Q  │
 └─────────────────────────────┘
 ```
 
@@ -217,7 +230,7 @@ After onboarding, the app runs as menu bar only.
    a. Copy local working tree version to temporary location (outside repo)
    b. Accept remote version: `git checkout --theirs <file> && git add <file>`
 4. Complete the merge commit (only remote versions committed)
-5. Copy local versions back into repo as `filename (Conflict YYYY-MM-DD).ext`
+5. Copy local versions back into repo as `filename (Conflict YYYY-MM-DD HH.mm.ss).ext`
 6. Local copies are now **untracked** (not staged, not committed)
 7. Notification: "Conflicts in [repo name] — local copies saved" (always shown)
 8. Display AppleScript dialog:
@@ -227,8 +240,8 @@ After onboarding, the app runs as menu bar only.
    The following files were changed both locally and remotely.
    Your local versions have been saved:
 
-   • Budget.xlsx → "Budget (Conflict 2025-01-14).xlsx"
-   • Notes.docx → "Notes (Conflict 2025-01-14).docx"
+     - Budget.xlsx -> Budget (Conflict 2025-01-14 15.30.45).xlsx
+     - Notes.docx -> Notes (Conflict 2025-01-14 15.30.45).docx
 
    Please review and reconcile these files, then delete the
    conflict copies when you're done.
@@ -266,12 +279,13 @@ In addition to file-level badges, Git-R-Done tracks repository-level status:
 
 | Status | Meaning | Source |
 |--------|---------|--------|
+| Pending | Status not yet loaded | Initial state before first scan |
 | Clean | In sync with remote | No local changes, not ahead/behind |
 | Ahead | Local commits to push | `git status`: `branch.ab +N` |
 | Has changes | Files modified/staged/untracked | Aggregate of file statuses |
 | Conflict | Unresolved merge conflicts | Any file with conflict status |
 
-Priority (worst-case wins): conflict > modified > staged > untracked > ahead > clean
+Priority (worst-case wins): conflict > modified > staged > untracked > ahead > clean > pending
 
 ### Context Menu Actions
 
@@ -345,7 +359,7 @@ Finder Sync Extensions have limited UI capabilities. Rather than complex XPC han
 ```swift
 func promptForCommitMessage() -> String? {
     let script = """
-    display dialog "Commit message:" default answer "" buttons {"Cancel", "Commit"} default button "Commit"
+    display dialog "Enter a commit message:" default answer "" buttons {"Cancel", "Commit"} default button "Commit" with title "Git-R-Done"
     """
     // Execute via Process, parse result
 }
@@ -358,12 +372,12 @@ This provides a native-feeling modal dialog without architectural complexity.
 Non-technical users cannot be expected to understand Git merge conflicts or use tools like FileMerge. Git-R-Done uses a "Keep Both" strategy:
 
 1. Remote version wins (becomes the committed file)
-2. Local version preserved as untracked `filename (Conflict YYYY-MM-DD).ext`
+2. Local version preserved as untracked `filename (Conflict YYYY-MM-DD HH.mm.ss).ext`
 3. User reconciles manually in their native application
 4. No data loss; no Git knowledge required
 
 **Design decisions:**
-- Date-stamped naming avoids accumulation of multiple backup files over time
+- Timestamp naming (date + time) ensures unique filenames even for multiple conflicts on the same day
 - Conflict copies are **not** auto-committed (prevents accidental push of backup files)
 - Conflict copies are **not** added to `.gitignore` (untracked badge serves as visual reminder)
 - Users may configure per-repo `.gitignore` patterns if desired
