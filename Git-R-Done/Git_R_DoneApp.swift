@@ -134,7 +134,7 @@ struct Git_R_DoneApp: App {
     @State private var menuViewModel = MenuBarViewModel()
 
     var body: some Scene {
-        MenuBarExtra("Git-R-Done", systemImage: "checkmark.circle.fill") {
+        MenuBarExtra("Git-R-Done", image: "MenuBarIcon") {
             if menuViewModel.summaries.isEmpty {
                 Text("No repositories")
                     .foregroundColor(.secondary)
