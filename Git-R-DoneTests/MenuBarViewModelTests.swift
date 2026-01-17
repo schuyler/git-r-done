@@ -397,4 +397,83 @@ struct MenuBarViewModelTests {
         #expect(viewModel.summaries.first?.path == "/new/repo")
         #expect(viewModel.summaries.first?.status == .pending)
     }
+
+    // MARK: - Display Name Derivation Tests
+
+    @Test("Adding repository uses derived display name from remote URL")
+    func addRepositoryUsesDerivedDisplayName() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/path/to/local-folder"]
+
+        // Create GitOperations with a mock executor that returns a remote URL
+        let mockExecutor = MockGitExecutorForTests()
+        mockExecutor.remoteURLResult = "git@github.com:organization/awesome-project.git"
+        let gitOps = GitOperations(executor: mockExecutor)
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache(),
+            gitValidator: gitValidator,
+            gitOperations: gitOps,
+            errorPresenter: MockErrorPresenter()
+        )
+
+        let url = URL(fileURLWithPath: "/path/to/local-folder")
+        viewModel.addRepositories(urls: [url])
+
+        #expect(repoConfig.addedRepos.count == 1)
+        // Display name should be derived from remote URL, not folder name
+        #expect(repoConfig.addedRepos.first?.displayName == "awesome-project")
+    }
+
+    @Test("Display name lookup returns stored display name")
+    func displayNameLookupReturnsStoredName() {
+        let repoConfig = MockRepoConfiguration()
+        let repo = WatchedRepository(path: "/test/repo", displayName: "Custom Display Name")
+        repoConfig.repositories = [repo]
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache()
+        )
+
+        let name = viewModel.displayName(for: "/test/repo")
+
+        #expect(name == "Custom Display Name")
+    }
+
+    @Test("Display name lookup falls back to folder name for unknown path")
+    func displayNameFallsBackToFolderName() {
+        let repoConfig = MockRepoConfiguration()
+
+        let viewModel = MenuBarViewModel(
+            repoConfiguration: repoConfig,
+            statusCache: MockStatusCache()
+        )
+
+        let name = viewModel.displayName(for: "/unknown/path/my-folder")
+
+        #expect(name == "my-folder")
+    }
+}
+
+// MARK: - Mock Git Executor for Display Name Tests
+
+private final class MockGitExecutorForTests: GitExecuting {
+    var remoteURLResult: String?
+
+    func isGitAvailable() -> Bool { true }
+
+    func execute(_ arguments: [String], in directory: String, timeout: TimeInterval) -> ShellResult {
+        // Handle remote get-url command
+        if arguments == ["remote", "get-url", "origin"] {
+            if let url = remoteURLResult {
+                return ShellResult(exitCode: 0, stdout: url + "\n", stderr: "")
+            } else {
+                return ShellResult(exitCode: 2, stdout: "", stderr: "fatal: No such remote 'origin'")
+            }
+        }
+        return ShellResult(exitCode: 0, stdout: "", stderr: "")
+    }
 }

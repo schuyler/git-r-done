@@ -386,8 +386,9 @@ struct SettingsViewModelTests {
         #expect(repoConfig.updatedDisplayNames.first?.name == "")
     }
 
-    @Test("defaultDisplayName returns folder name when no gitOperations")
+    @Test("defaultDisplayName returns folder name when no remote URL")
     func defaultDisplayNameFromFolderName() {
+        // GitOperations with no mocked remote URL will fail and fall back to folder name
         let viewModel = SettingsViewModel(
             repoConfiguration: MockRepoConfiguration(),
             settingsStore: MockSettingsStore(),
@@ -399,5 +400,81 @@ struct SettingsViewModelTests {
         let name = viewModel.defaultDisplayName(for: "/Users/test/my-awesome-project")
 
         #expect(name == "my-awesome-project")
+    }
+
+    @Test("Adding repository uses derived display name from remote URL")
+    func addRepositoryUsesDerivedDisplayName() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/path/to/local-folder"]
+
+        // Create GitOperations with a mock executor that returns a remote URL
+        let mockExecutor = MockGitExecutorForTests()
+        mockExecutor.remoteURLResult = "https://github.com/user/my-cool-project.git"
+        let gitOps = GitOperations(executor: mockExecutor)
+
+        let viewModel = SettingsViewModel(
+            repoConfiguration: repoConfig,
+            settingsStore: MockSettingsStore(),
+            gitValidator: gitValidator,
+            gitOperations: gitOps,
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
+        )
+
+        let url = URL(fileURLWithPath: "/path/to/local-folder")
+        viewModel.addRepositories(urls: [url])
+
+        #expect(repoConfig.addedRepos.count == 1)
+        // Display name should be derived from remote URL, not folder name
+        #expect(repoConfig.addedRepos.first?.displayName == "my-cool-project")
+    }
+
+    @Test("Adding repository falls back to folder name when no remote")
+    func addRepositoryFallsBackToFolderName() {
+        let repoConfig = MockRepoConfiguration()
+        let gitValidator = MockGitValidator()
+        gitValidator.validPaths = ["/path/to/my-local-project"]
+
+        // Create GitOperations with a mock executor that returns no remote URL
+        let mockExecutor = MockGitExecutorForTests()
+        mockExecutor.remoteURLResult = nil
+        let gitOps = GitOperations(executor: mockExecutor)
+
+        let viewModel = SettingsViewModel(
+            repoConfiguration: repoConfig,
+            settingsStore: MockSettingsStore(),
+            gitValidator: gitValidator,
+            gitOperations: gitOps,
+            errorPresenter: MockErrorPresenter(),
+            statusCache: MockStatusCache()
+        )
+
+        let url = URL(fileURLWithPath: "/path/to/my-local-project")
+        viewModel.addRepositories(urls: [url])
+
+        #expect(repoConfig.addedRepos.count == 1)
+        // Display name should be folder name since no remote
+        #expect(repoConfig.addedRepos.first?.displayName == "my-local-project")
+    }
+}
+
+// MARK: - Mock Git Executor for Display Name Tests
+
+private final class MockGitExecutorForTests: GitExecuting {
+    var remoteURLResult: String?
+
+    func isGitAvailable() -> Bool { true }
+
+    func execute(_ arguments: [String], in directory: String, timeout: TimeInterval) -> ShellResult {
+        // Handle remote get-url command
+        if arguments == ["remote", "get-url", "origin"] {
+            if let url = remoteURLResult {
+                return ShellResult(exitCode: 0, stdout: url + "\n", stderr: "")
+            } else {
+                return ShellResult(exitCode: 2, stdout: "", stderr: "fatal: No such remote 'origin'")
+            }
+        }
+        return ShellResult(exitCode: 0, stdout: "", stderr: "")
     }
 }
