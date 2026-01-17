@@ -14,9 +14,44 @@ permissions:
   contents: write
 
 jobs:
+  # ==================== TEST JOB ====================
+  # Runs without credentials - allows contributors to validate code
+  test:
+    name: Run Tests
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          set -o pipefail
+          xcodebuild test \
+            -project Git-R-Done.xcodeproj \
+            -scheme Git-R-Done \
+            -destination 'platform=macOS' \
+            -derivedDataPath DerivedData \
+            | xcpretty --color
+          echo "All tests passed"
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            ~/Library/Logs/DiagnosticReports/
+            DerivedData/Logs/Test/
+          retention-days: 7
+
+  # ==================== RELEASE JOB ====================
+  # Requires credentials - only runs after tests pass
   release:
     name: Build, Sign, Notarize, and Release
     runs-on: macos-15
+    needs: test
 
     steps:
       # ==================== SETUP ====================
@@ -85,18 +120,6 @@ jobs:
           BUILD_NUMBER=$(git rev-list --count HEAD)
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "Build number: $BUILD_NUMBER"
-
-      # ==================== TEST ====================
-
-      - name: Run tests before release
-        run: |
-          echo "Running tests..."
-          xcodebuild test \
-            -project Git-R-Done.xcodeproj \
-            -scheme Git-R-Done \
-            -destination 'platform=macOS' \
-            -derivedDataPath DerivedData
-          echo "All tests passed"
 
       # ==================== CODE SIGNING ====================
 
