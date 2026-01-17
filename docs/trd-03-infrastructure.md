@@ -114,6 +114,7 @@ sender.send(
 - Persist watched repositories to App Group UserDefaults
 - Load repositories on initialization
 - Add/remove repositories by path or UUID
+- Update repository display names
 - Provide thread-safe access to repository list
 - Publish change notifications
 
@@ -127,14 +128,35 @@ Repositories are stored as JSON in the shared App Group container. Path normaliz
 
 The `load()` method is called during initialization and reloads the repository list on demand. Repository validation against the filesystem can be performed separately through `GitOperations`.
 
+**Display Name Management:**
+
+When adding a repository, the caller can provide an explicit display name or let it default to the folder name. For best results, callers should:
+1. Fetch the git remote URL via `GitOperations.getRemoteURL()`
+2. Parse the repository name from the URL
+3. Pass that name to `WatchedRepository(path:displayName:)`
+
+Display names can be updated via `updateDisplayName(id:name:)`. Empty names should revert to the default (folder name).
+
 **Example Usage:**
 
 ```swift
 let config = RepoConfiguration.shared
+
+// Add with default name (folder name)
 config.add(WatchedRepository(path: "/path/to/repo"))
 
-if config.contains(path: "/path/to/repo") {
-    // Repository is tracked
+// Add with explicit display name (e.g., from remote URL)
+let displayName = gitOps.getRemoteURL(in: path)
+    .flatMap { parseRepoName(from: $0) }
+    ?? URL(fileURLWithPath: path).lastPathComponent
+config.add(WatchedRepository(path: path, displayName: displayName))
+
+// Update display name
+config.updateDisplayName(id: repo.id, name: "New Name")
+
+// Look up repository by path
+if let repo = config.repository(for: "/path/to/repo") {
+    print(repo.displayName)
 }
 
 // Observe changes
@@ -248,6 +270,8 @@ manager.invalidate(repoPath: repoPath)
 - `add(_:)`
 - `remove(id:)` and `remove(path:)`
 - `contains(path:) -> Bool`
+- `updateDisplayName(id:name:)` — Update a repository's display name
+- `repository(for:) -> WatchedRepository?` — Look up repository by path
 
 **SettingsStoring** defines the settings storage contract:
 - `settings: AppSettings` (read-only)

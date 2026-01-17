@@ -100,6 +100,8 @@ protocol RepoConfiguring {
     func add(_ repo: WatchedRepository)
     func remove(id: UUID)
     func contains(path: String) -> Bool
+    func updateDisplayName(id: UUID, name: String)
+    func repository(for path: String) -> WatchedRepository?
 }
 ```
 
@@ -141,27 +143,48 @@ protocol StatusCaching {
 
 ### 4.1 WatchedRepository
 
-A repository tracked by the application.
+A repository tracked by the application. Display names are user-editable and persisted.
 
 ```swift
 struct WatchedRepository: Codable, Identifiable, Equatable {
     let id: UUID
     let path: String
-    let displayName: String
+    var displayName: String
     let dateAdded: Date
 
     var url: URL {
         URL(fileURLWithPath: path)
     }
 
-    init(id: UUID = UUID(), path: String, dateAdded: Date = Date()) {
+    /// Creates a repository with an explicit display name.
+    init(id: UUID = UUID(), path: String, displayName: String, dateAdded: Date = Date()) {
         self.id = id
         self.path = (path as NSString).standardizingPath
-        self.displayName = URL(fileURLWithPath: path).lastPathComponent
+        self.displayName = displayName
         self.dateAdded = dateAdded
+    }
+
+    /// Creates a repository with a default display name derived from path.
+    init(id: UUID = UUID(), path: String, dateAdded: Date = Date()) {
+        self.init(
+            id: id,
+            path: path,
+            displayName: URL(fileURLWithPath: path).lastPathComponent,
+            dateAdded: dateAdded
+        )
     }
 }
 ```
+
+**Display Name Resolution:**
+
+When adding a repository, the default display name is determined by:
+1. **Git remote URL** (preferred) — Extract repository name from `origin` remote
+   - `https://github.com/user/my-project.git` → "my-project"
+   - `git@gitlab.com:team/shared-docs.git` → "shared-docs"
+2. **Folder name** (fallback) — Last path component if no remote or parsing fails
+
+Display names can be edited by the user in the Settings window and persist across app launches.
 
 ### 4.2 GitStatusCode
 
@@ -389,9 +412,17 @@ struct RepoStatusSummary: Codable, Equatable {
         self.commitsAhead = commitsAhead
         self.updatedAt = updatedAt
     }
-
-    var displayName: String {
-        URL(fileURLWithPath: path).lastPathComponent
-    }
 }
 ```
+
+**Display Name Lookup:**
+
+`RepoStatusSummary` does not store display names. When displaying a repository in the menu bar, look up the display name from `RepoConfiguration`:
+
+```swift
+let summary: RepoStatusSummary = ...
+let displayName = RepoConfiguration.shared.repository(for: summary.path)?.displayName
+    ?? URL(fileURLWithPath: summary.path).lastPathComponent
+```
+
+This ensures the user-edited display name is always shown, even if it was changed after the status was cached.
