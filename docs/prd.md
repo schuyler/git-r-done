@@ -146,21 +146,26 @@ Each repository shows its aggregate status (worst-case wins). Clicking a reposit
 ### Settings Window
 
 ```
-┌─────────────────────────────────────────┐
-│ Git-R-Done Settings                     │
-├─────────────────────────────────────────┤
-│ Watched Repositories:                   │
-│ ┌─────────────────────────────────────┐ │
-│ │ 📁 Documents/ProjectX            ✕  │ │
-│ │ 📁 Shared/TeamDocs               ✕  │ │
-│ └─────────────────────────────────────┘ │
-│ [+ Add Repository...]                   │
-│                                         │
-│ ☑ Auto-push after commit                │
-└─────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│ Git-R-Done Settings                                       │
+├───────────────────────────────────────────────────────────┤
+│ Watched Repositories:                                     │
+│ ┌───────────────────────────────────────────────────────┐ │
+│ │ Name              │ Path                          │   │ │
+│ ├───────────────────┼───────────────────────────────┼───┤ │
+│ │ ProjectX          │ ~/Documents/ProjectX          │ ✕ │ │
+│ │ TeamDocs          │ ~/Shared/TeamDocs             │ ✕ │ │
+│ └───────────────────────────────────────────────────────┘ │
+│ [+ Add Repository...]                                     │
+│                                                           │
+│ ☑ Auto-push after commit                                  │
+└───────────────────────────────────────────────────────────┘
 ```
 
-- Repository list shows folder paths with remove (✕) buttons
+- Repository list displayed as a table with columns:
+  - **Name** — Editable display name (double-click to edit)
+  - **Path** — Repository path (read-only, abbreviated with `~`)
+  - **Remove** — Button to remove repository from watch list
 - "Add Repository..." opens folder picker, validates Git repo
 - Notifications are controlled via System Settings (not in-app)
 
@@ -287,6 +292,36 @@ In addition to file-level badges, Git-R-Done tracks repository-level status:
 
 Priority (worst-case wins): conflict > modified > staged > untracked > ahead > clean > pending
 
+### Repository Display Names
+
+Each watched repository has a user-editable display name, used throughout the UI:
+- Menu bar repository list
+- Settings window table
+- Notifications (e.g., "Pushed to [display name]")
+- Conflict dialogs
+
+**Default Name Resolution:**
+When a repository is added, the default display name is determined by:
+1. **Git remote URL** (preferred) — Extract the repository name from `origin` remote URL
+   - `https://github.com/user/my-project.git` → "my-project"
+   - `git@gitlab.com:team/shared-docs.git` → "shared-docs"
+   - Strips `.git` suffix if present
+2. **Folder name** (fallback) — Use the repository directory name if:
+   - No remote configured
+   - Remote URL parsing fails
+
+**Editing:**
+- Double-click the Name cell in Settings to edit
+- Changes persist immediately to App Groups storage
+- Empty names revert to the computed default
+
+**Data Model:**
+The `WatchedRepository` struct stores:
+- `id: UUID` — Unique identifier
+- `path: String` — Absolute filesystem path
+- `displayName: String` — User-editable name (stored, not computed)
+- `dateAdded: Date` — When added to watch list
+
 ### Context Menu Actions
 
 **On files:**
@@ -326,6 +361,7 @@ Notifications are controlled via System Settings → Notifications → Git-R-Don
 | Setting | Description | Default |
 |---------|-------------|---------|
 | Auto-push after commit | Automatically push after each commit | On |
+| Repository display names | User-editable names for watched repos | Derived from remote URL or folder name |
 
 ## Technical Decisions
 
