@@ -99,6 +99,40 @@ Git-R-Done.app/
 
 ## User Interface
 
+### Menu Bar Icon
+
+The menu bar icon is a stylized "R" (for "Git-R-Done") displayed as a filled circle with the letter knocked out:
+
+```
+    ████████
+  ██   ███  ██
+ ██  ██  ██  ██
+ ██  █████   ██
+ ██  ██ ██   ██
+ ██  ██  ██  ██
+  ██        ██
+    ████████
+```
+
+**Design rationale:**
+- The "R" identifies the app at a glance in a crowded menu bar
+- Filled circle provides consistent visual weight across light/dark modes
+- Template image rendering ensures proper appearance in all system themes
+
+**Status Badge:**
+A small colored dot appears at the top-right corner of the icon when any tracked repository has pending changes:
+
+| Status | Badge Color |
+|--------|-------------|
+| Clean/Pending | No badge |
+| Ahead | Blue |
+| Untracked | Gray |
+| Staged | Yellow |
+| Modified | Orange |
+| Conflict | Red |
+
+The badge reflects the worst-case status across all watched repositories, providing at-a-glance awareness without opening the menu.
+
 ### Menu Bar Menu
 
 ```
