@@ -21,6 +21,11 @@ final class MenuBarViewModel {
 
     var summaries: [RepoStatusSummary] = []
 
+    /// Worst-case status across all tracked repositories
+    var aggregateStatus: BadgePriority {
+        summaries.map(\.status).max() ?? .pending
+    }
+
     init(
         repoConfiguration: RepoConfiguring = RepoConfiguration.shared,
         statusCache: StatusCaching = SharedStatusCache.shared,
@@ -124,6 +129,41 @@ final class MenuBarViewModel {
     }
 }
 
+// MARK: - Menu Bar Icon View
+
+struct MenuBarIconView: View {
+    let status: BadgePriority
+
+    var body: some View {
+        Image("MenuBarIcon")
+            .overlay(alignment: .topTrailing) {
+                if let badgeColor = badgeColor(for: status) {
+                    Circle()
+                        .fill(badgeColor)
+                        .frame(width: 6, height: 6)
+                        .offset(x: 2, y: -2)
+                }
+            }
+    }
+
+    private func badgeColor(for status: BadgePriority) -> Color? {
+        switch status {
+        case .pending, .clean:
+            return nil  // No badge when clean or loading
+        case .ahead:
+            return .blue
+        case .untracked:
+            return .gray
+        case .staged:
+            return .yellow
+        case .modified:
+            return .orange
+        case .conflict:
+            return .red
+        }
+    }
+}
+
 // MARK: - App Entry Point
 
 @main
@@ -134,7 +174,7 @@ struct Git_R_DoneApp: App {
     @State private var menuViewModel = MenuBarViewModel()
 
     var body: some Scene {
-        MenuBarExtra("Git-R-Done", systemImage: "checkmark.circle.fill") {
+        MenuBarExtra {
             if menuViewModel.summaries.isEmpty {
                 Text("No repositories")
                     .foregroundColor(.secondary)
@@ -174,6 +214,8 @@ struct Git_R_DoneApp: App {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q", modifiers: .command)
+        } label: {
+            MenuBarIconView(status: menuViewModel.aggregateStatus)
         }
         .menuBarExtraStyle(.menu)
 

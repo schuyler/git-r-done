@@ -16,6 +16,61 @@ The main app is a menu bar application using SwiftUI's `MenuBarExtra` with NSMen
 2. **Settings Window**: Separate window for repository and preference management
 3. **Onboarding Window**: First-run welcome screen
 
+#### Menu Bar Icon
+
+The menu bar uses a custom icon with dynamic status badge, implemented via `MenuBarIconView`:
+
+```swift
+struct MenuBarIconView: View {
+    let status: BadgePriority
+
+    var body: some View {
+        Image("MenuBarIcon")
+            .overlay(alignment: .topTrailing) {
+                if let badgeColor = badgeColor(for: status) {
+                    Circle()
+                        .fill(badgeColor)
+                        .frame(width: 6, height: 6)
+                        .offset(x: 2, y: -2)
+                }
+            }
+    }
+}
+```
+
+**Icon Asset:**
+- Location: `Assets.xcassets/MenuBarIcon.imageset/`
+- Format: PDF vector (18×18pt) with SVG source
+- Rendering: Template mode for automatic light/dark adaptation
+- Design: Filled circle with sans-serif "R" knocked out as negative space
+
+**Status Badge:**
+The `MenuBarViewModel.aggregateStatus` property computes the worst-case status across all repositories:
+
+```swift
+var aggregateStatus: BadgePriority {
+    summaries.map(\.status).max() ?? .pending
+}
+```
+
+Badge colors map to `BadgePriority`:
+- `.pending`, `.clean` → No badge (nil)
+- `.ahead` → Blue
+- `.untracked` → Gray
+- `.staged` → Yellow
+- `.modified` → Orange
+- `.conflict` → Red
+
+The `MenuBarExtra` uses the label closure to include the dynamic icon:
+
+```swift
+MenuBarExtra {
+    // menu content
+} label: {
+    MenuBarIconView(status: menuViewModel.aggregateStatus)
+}
+```
+
 #### Menu Bar Interface
 
 The menu bar displays repository status and standard menu items:
