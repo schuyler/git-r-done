@@ -21,7 +21,8 @@ The main app is a menu bar application using SwiftUI's `MenuBarExtra` with NSMen
 The menu bar displays repository status and standard menu items:
 
 **Repository Status Section:**
-- Each watched repository shown with status icon and basename
+- Each watched repository shown with status icon and user-defined display name
+- Display names are looked up from `RepoConfiguration` (not the status cache)
 - Clicking a repository opens it in Finder
 - Status icons indicate aggregate repository state:
 
@@ -47,11 +48,24 @@ Repository status is read from `SharedStatusCache`, which is populated by the Fi
 
 #### Settings View
 
-`SettingsView` displays:
-- List of watched repositories with remove buttons
-- "Add Repository..." button that opens a folder picker
+`SettingsView` displays repositories in a table format:
+
+| Column | Description |
+|--------|-------------|
+| Name | Editable display name (double-click to edit) |
+| Path | Repository path (read-only, abbreviated with `~`) |
+| Remove | Button to remove repository from watch list |
+
+**Features:**
+- "Add Repository..." button opens a folder picker
 - Auto-push toggle for enabling automatic push after commits
 - Notified of external changes via `repositoriesDidChange` and `settingsDidChange` notifications
+
+**Display Name Editing:**
+- Double-click the Name cell to enter edit mode
+- Press Enter to confirm, Escape to cancel
+- Empty names revert to the default (derived from remote URL or folder name)
+- Changes persist immediately via `RepoConfiguration.updateDisplayName()`
 
 #### Settings View Model
 
@@ -62,6 +76,7 @@ init(
     repoConfiguration: RepoConfiguring = RepoConfiguration.shared,
     settingsStore: SettingsStoring = SettingsStore.shared,
     gitValidator: GitValidating = GitOperations(),
+    gitOperations: GitOperations = GitOperations(),
     errorPresenter: ErrorPresenting = AppleScriptDialogPresenter()
 )
 ```
@@ -70,8 +85,19 @@ Responsibilities:
 - Expose repositories from `RepoConfiguration`
 - Manage auto-push setting via `SettingsStore`
 - Validate Git repositories before adding
+- Derive default display names from remote URL when adding repositories
 - Handle repository add/remove operations
+- Update display names via `updateDisplayName(id:name:)`
 - Respond to external data changes via `refresh()` method
+
+**Display Name Methods:**
+
+```swift
+func updateDisplayName(for id: UUID, name: String)
+func defaultDisplayName(for path: String) -> String
+```
+
+`defaultDisplayName(for:)` fetches the remote URL and parses the repository name. Falls back to the folder name if no remote is configured or parsing fails.
 
 ### 13.3 Initialization Flow
 

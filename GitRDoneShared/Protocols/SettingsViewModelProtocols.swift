@@ -11,6 +11,8 @@ public protocol RepoConfiguring {
     func add(_ repo: WatchedRepository)
     func remove(id: UUID)
     func contains(path: String) -> Bool
+    func updateDisplayName(id: UUID, name: String)
+    func repository(for path: String) -> WatchedRepository?
 }
 
 /// Protocol for app settings storage

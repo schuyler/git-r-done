@@ -86,6 +86,34 @@ public final class RepoConfiguration: RepoConfiguring {
         return queue.sync { _repositories.contains { $0.path == normalized } }
     }
 
+    public func updateDisplayName(id: UUID, name: String) {
+        queue.async { [self] in
+            guard let index = _repositories.firstIndex(where: { $0.id == id }) else {
+                Log.config.warning("Repository not found for id: \(id)")
+                return
+            }
+
+            var repo = _repositories[index]
+            if name.isEmpty {
+                // Revert to default (folder name)
+                repo.displayName = URL(fileURLWithPath: repo.path).lastPathComponent
+            } else {
+                repo.displayName = name
+            }
+            _repositories[index] = repo
+            save()
+            Log.config.info("Updated display name for \(repo.path) to: \(repo.displayName)")
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .repositoriesDidChange, object: nil)
+            }
+        }
+    }
+
+    public func repository(for path: String) -> WatchedRepository? {
+        let normalized = (path as NSString).standardizingPath
+        return queue.sync { _repositories.first { $0.path == normalized } }
+    }
+
     private func save() {
         guard let data = try? JSONEncoder().encode(self._repositories) else {
             Log.config.error("Failed to encode repositories")

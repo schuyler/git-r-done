@@ -203,7 +203,7 @@ class FinderSync: FIFinderSync {
         }
 
         let relativePath = getRelativePath(url, in: repoPath)
-        let repoName = gitOps.getRepoName(at: repoPath)
+        let repoName = displayName(for: repoPath)
         let autoPush = SettingsStore.shared.settings.autoPushEnabled
 
         statusManager.performAction(in: repoPath) { [gitOps, dialogPresenter, notifier] in
@@ -249,7 +249,7 @@ class FinderSync: FIFinderSync {
         guard let target = FIFinderSyncController.default().targetedURL(),
               let repoPath = findRepoPath(for: target) else { return }
 
-        let repoName = gitOps.getRepoName(at: repoPath)
+        let repoName = displayName(for: repoPath)
 
         statusManager.performAction(in: repoPath) { [gitOps, conflictHandler, dialogPresenter, notifier] in
             let result = gitOps.pull(in: repoPath)
@@ -280,7 +280,7 @@ class FinderSync: FIFinderSync {
         guard let target = FIFinderSyncController.default().targetedURL(),
               let repoPath = findRepoPath(for: target) else { return }
 
-        let repoName = gitOps.getRepoName(at: repoPath)
+        let repoName = displayName(for: repoPath)
 
         statusManager.performAction(in: repoPath) { [gitOps, notifier] in
             let result = gitOps.push(in: repoPath)
@@ -301,7 +301,7 @@ class FinderSync: FIFinderSync {
             return
         }
 
-        let repoName = gitOps.getRepoName(at: repoPath)
+        let repoName = displayName(for: repoPath)
         let autoPush = SettingsStore.shared.settings.autoPushEnabled
 
         statusManager.performAction(in: repoPath) { [gitOps, dialogPresenter, notifier] in
@@ -350,6 +350,13 @@ class FinderSync: FIFinderSync {
         var isDir: ObjCBool = false
         FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
         return isDir.boolValue
+    }
+
+    /// Returns the display name for a repository, looking up from RepoConfiguration.
+    /// Falls back to folder name if not found.
+    private func displayName(for repoPath: String) -> String {
+        RepoConfiguration.shared.repository(for: repoPath)?.displayName
+            ?? URL(fileURLWithPath: repoPath).lastPathComponent
     }
 }
 

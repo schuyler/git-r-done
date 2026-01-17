@@ -35,6 +35,42 @@ func isGitRepository(at path: String) -> Bool
 func repositoryRoot(for path: String) -> String?
 ```
 
+### Remote URL
+
+```swift
+func getRemoteURL(in repoPath: String, remote: String = "origin") -> Result<String?, GitError>
+```
+
+Fetches the URL for a named remote (default: `origin`) via `git remote get-url <remote>`. Returns `nil` if no remote is configured.
+
+**Repository Name Parsing:**
+
+To extract the repository name from a remote URL, use `parseRepoName(from:)`:
+
+```swift
+static func parseRepoName(from remoteURL: String) -> String?
+```
+
+Handles common URL formats:
+- `https://github.com/user/my-project.git` → "my-project"
+- `git@gitlab.com:team/shared-docs.git` → "shared-docs"
+- `ssh://git@bitbucket.org/org/repo.git` → "repo"
+
+Strips `.git` suffix if present. Returns `nil` if the URL cannot be parsed.
+
+**Usage for Display Names:**
+
+```swift
+let displayName: String
+if case .success(let url) = gitOps.getRemoteURL(in: path),
+   let url = url,
+   let name = GitOperations.parseRepoName(from: url) {
+    displayName = name
+} else {
+    displayName = URL(fileURLWithPath: path).lastPathComponent
+}
+```
+
 ### Status
 
 ```swift

@@ -15,6 +15,7 @@ final class MenuBarViewModel {
     private let repoConfiguration: RepoConfiguring
     private let statusCache: StatusCaching
     private let gitValidator: GitValidating
+    private let gitOperations: GitOperations
     private let errorPresenter: ErrorPresenting
     private var observers: [Any] = []
 
@@ -24,11 +25,13 @@ final class MenuBarViewModel {
         repoConfiguration: RepoConfiguring = RepoConfiguration.shared,
         statusCache: StatusCaching = SharedStatusCache.shared,
         gitValidator: GitValidating = GitOperations(),
+        gitOperations: GitOperations = GitOperations(),
         errorPresenter: ErrorPresenting = AppleScriptDialogPresenter()
     ) {
         self.repoConfiguration = repoConfiguration
         self.statusCache = statusCache
         self.gitValidator = gitValidator
+        self.gitOperations = gitOperations
         self.errorPresenter = errorPresenter
         loadSummaries()
 
@@ -66,6 +69,13 @@ final class MenuBarViewModel {
         }
     }
 
+    /// Returns the display name for a repository path.
+    /// Looks up from configuration, falls back to folder name.
+    func displayName(for path: String) -> String {
+        repoConfiguration.repository(for: path)?.displayName
+            ?? URL(fileURLWithPath: path).lastPathComponent
+    }
+
     func addRepositories(urls: [URL]) {
         var invalidPaths: [String] = []
 
@@ -83,7 +93,9 @@ final class MenuBarViewModel {
                 continue
             }
 
-            let repo = WatchedRepository(path: path)
+            // Derive display name from remote URL, fall back to folder name
+            let displayName = defaultDisplayName(for: path)
+            let repo = WatchedRepository(path: path, displayName: displayName)
             repoConfiguration.add(repo)
         }
 
@@ -96,6 +108,19 @@ final class MenuBarViewModel {
 
         // Refresh summaries after adding
         loadSummaries()
+    }
+
+    /// Returns the default display name for a path.
+    /// Tries to derive from git remote URL, falls back to folder name.
+    private func defaultDisplayName(for path: String) -> String {
+        // Try to get the remote URL and parse the repo name from it
+        if case .success(let remoteURL) = gitOperations.getRemoteURL(in: path),
+           let url = remoteURL,
+           let name = GitOperations.parseRepoName(from: url) {
+            return name
+        }
+        // Fall back to folder name
+        return URL(fileURLWithPath: path).lastPathComponent
     }
 }
 
@@ -122,7 +147,7 @@ struct Git_R_DoneApp: App {
                     } label: {
                         HStack {
                             statusIcon(for: summary.status)
-                            Text(summary.displayName)
+                            Text(menuViewModel.displayName(for: summary.path))
                         }
                     }
                 }
