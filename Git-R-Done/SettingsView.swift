@@ -8,6 +8,8 @@ import GitRDoneShared
 
 struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
+    @State private var editingId: UUID?
+    @State private var editingName: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -15,7 +17,7 @@ struct SettingsView: View {
             Text("Watched Repositories:")
                 .font(.headline)
 
-            // Repository list
+            // Repository table
             GroupBox {
                 if viewModel.repositories.isEmpty {
                     Text("No repositories")
@@ -24,29 +26,54 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.vertical, 8)
                 } else {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            ForEach(viewModel.repositories) { repo in
-                                HStack {
-                                    Image(systemName: "folder.fill")
-                                        .foregroundColor(.blue)
-                                    Text(repo.displayName)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                    Spacer()
-                                    Button(action: { viewModel.removeRepository(id: repo.id) }) {
-                                        Image(systemName: "xmark")
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help("Remove repository")
-                                    .accessibilityLabel("Remove \(repo.displayName)")
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
+                    VStack(spacing: 0) {
+                        // Table header
+                        HStack(spacing: 0) {
+                            Text("Name")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                                .frame(width: 140, alignment: .leading)
+                            Text("Path")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Spacer()
+                                .frame(width: 30)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
 
-                                if repo.id != viewModel.repositories.last?.id {
-                                    Divider()
+                        Divider()
+
+                        // Table rows
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                ForEach(viewModel.repositories) { repo in
+                                    RepositoryRow(
+                                        repo: repo,
+                                        isEditing: editingId == repo.id,
+                                        editingName: $editingName,
+                                        onStartEditing: {
+                                            editingId = repo.id
+                                            editingName = repo.displayName
+                                        },
+                                        onCommitEditing: {
+                                            viewModel.updateDisplayName(for: repo.id, name: editingName)
+                                            editingId = nil
+                                        },
+                                        onCancelEditing: {
+                                            editingId = nil
+                                        },
+                                        onRemove: {
+                                            viewModel.removeRepository(id: repo.id)
+                                        }
+                                    )
+
+                                    if repo.id != viewModel.repositories.last?.id {
+                                        Divider()
+                                    }
                                 }
                             }
                         }
@@ -76,7 +103,7 @@ struct SettingsView: View {
             Spacer()
         }
         .padding(20)
-        .frame(minWidth: 400, minHeight: 300)
+        .frame(minWidth: 450, minHeight: 300)
         .onReceive(NotificationCenter.default.publisher(for: .repositoriesDidChange)) { _ in
             viewModel.refresh()
         }
@@ -95,6 +122,69 @@ struct SettingsView: View {
         if panel.runModal() == .OK {
             viewModel.addRepositories(urls: panel.urls)
         }
+    }
+}
+
+// MARK: - Repository Row
+
+private struct RepositoryRow: View {
+    let repo: WatchedRepository
+    let isEditing: Bool
+    @Binding var editingName: String
+    let onStartEditing: () -> Void
+    let onCommitEditing: () -> Void
+    let onCancelEditing: () -> Void
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Name column (editable)
+            if isEditing {
+                TextField("Name", text: $editingName)
+                    .textFieldStyle(.plain)
+                    .frame(width: 130)
+                    .onSubmit { onCommitEditing() }
+                    .onExitCommand { onCancelEditing() }
+            } else {
+                Text(repo.displayName)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(width: 130, alignment: .leading)
+                    .onTapGesture(count: 2) { onStartEditing() }
+                    .help("Double-click to edit")
+            }
+            Spacer()
+                .frame(width: 10)
+
+            // Path column (read-only)
+            Text(abbreviatedPath(repo.path))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .help(repo.path)
+
+            // Remove button
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Remove repository")
+            .accessibilityLabel("Remove \(repo.displayName)")
+            .frame(width: 30)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+    }
+
+    /// Abbreviates path with ~ for home directory
+    private func abbreviatedPath(_ path: String) -> String {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        if path.hasPrefix(home) {
+            return "~" + path.dropFirst(home.count)
+        }
+        return path
     }
 }
 

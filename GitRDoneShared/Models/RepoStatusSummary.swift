@@ -18,7 +18,6 @@ public struct RepoStatusSummary: Codable, Equatable {
         self.updatedAt = updatedAt
     }
 
-    public var displayName: String {
-        URL(fileURLWithPath: path).lastPathComponent
-    }
+    // Note: Display names are now stored in WatchedRepository and should be
+    // looked up via RepoConfiguration.repository(for:)?.displayName
 }

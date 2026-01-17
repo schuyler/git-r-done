@@ -38,22 +38,9 @@ struct RepoStatusSummaryTests {
         #expect(summary.updatedAt == testDate)
     }
 
-    // MARK: - Display Name Tests
-
-    @Test func displayName_extractsLastPathComponent() {
-        let summary = RepoStatusSummary(path: "/Users/dev/projects/my-awesome-repo", status: .clean)
-        #expect(summary.displayName == "my-awesome-repo")
-    }
-
-    @Test func displayName_rootPath() {
-        let summary = RepoStatusSummary(path: "/", status: .clean)
-        #expect(summary.displayName == "/")
-    }
-
-    @Test func displayName_singleComponent() {
-        let summary = RepoStatusSummary(path: "repo", status: .clean)
-        #expect(summary.displayName == "repo")
-    }
+    // Note: displayName was removed from RepoStatusSummary.
+    // Display names are now stored in WatchedRepository and looked up via
+    // RepoConfiguration.repository(for:)?.displayName
 
     // MARK: - Codable Tests
 

@@ -80,6 +80,20 @@ final class SettingsViewModel {
         repoConfiguration.remove(id: id)
     }
 
+    /// Updates the display name for a repository.
+    /// Pass an empty string to revert to the default (folder name).
+    func updateDisplayName(for id: UUID, name: String) {
+        repoConfiguration.updateDisplayName(id: id, name: name)
+    }
+
+    /// Returns the default display name for a path.
+    /// Tries to derive from git remote URL, falls back to folder name.
+    func defaultDisplayName(for path: String) -> String {
+        // For now, just return the folder name
+        // In the future, this could fetch the remote URL and parse it
+        URL(fileURLWithPath: path).lastPathComponent
+    }
+
     /// Reloads data from underlying stores.
     /// Called when external notifications indicate data has changed.
     func refresh() {

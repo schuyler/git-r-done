@@ -243,6 +243,58 @@ public final class GitOperations: GitValidating {
         URL(fileURLWithPath: path).lastPathComponent
     }
 
+    /// Gets the URL for a named remote (default: origin).
+    /// Returns nil if no remote is configured.
+    public func getRemoteURL(in repoPath: String, remote: String = "origin") -> Result<String?, GitError> {
+        let result = executor.execute(["remote", "get-url", remote], in: repoPath)
+
+        if result.success {
+            let url = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+            return .success(url.isEmpty ? nil : url)
+        }
+
+        // No remote configured is not an error, just return nil
+        if result.stderr.contains("No such remote") {
+            return .success(nil)
+        }
+
+        return .failure(.commandFailed(result.stderr))
+    }
+
+    /// Parses a repository name from a git remote URL.
+    /// Handles HTTPS, SSH, and git:// URL formats.
+    /// Returns nil if the URL cannot be parsed.
+    public static func parseRepoName(from remoteURL: String) -> String? {
+        guard !remoteURL.isEmpty else { return nil }
+
+        var name: String?
+
+        // Handle SSH URLs like git@github.com:user/repo.git
+        if remoteURL.contains("@") && remoteURL.contains(":") && !remoteURL.hasPrefix("ssh://") {
+            // git@github.com:user/repo.git -> user/repo.git
+            if let colonIndex = remoteURL.lastIndex(of: ":") {
+                let pathPart = String(remoteURL[remoteURL.index(after: colonIndex)...])
+                name = URL(fileURLWithPath: pathPart).lastPathComponent
+            }
+        }
+        // Handle standard URLs (https://, ssh://, git://)
+        else if let url = URL(string: remoteURL) {
+            name = url.lastPathComponent
+        }
+
+        // Strip .git suffix if present
+        if let n = name, n.hasSuffix(".git") {
+            name = String(n.dropLast(4))
+        }
+
+        // Validate we got a reasonable name
+        guard let finalName = name, !finalName.isEmpty, finalName != "/" else {
+            return nil
+        }
+
+        return finalName
+    }
+
     private func parseConflictFiles(_ output: String) -> [String] {
         var files: [String] = []
         let lines = output.components(separatedBy: "\n")

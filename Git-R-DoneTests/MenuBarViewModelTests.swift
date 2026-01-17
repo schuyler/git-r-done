@@ -14,6 +14,7 @@ private final class MockRepoConfiguration: RepoConfiguring {
     var repositories: [WatchedRepository] = []
     var addedRepos: [WatchedRepository] = []
     var removedIds: [UUID] = []
+    var updatedDisplayNames: [(id: UUID, name: String)] = []
 
     func add(_ repo: WatchedRepository) {
         addedRepos.append(repo)
@@ -27,6 +28,20 @@ private final class MockRepoConfiguration: RepoConfiguring {
 
     func contains(path: String) -> Bool {
         repositories.contains { $0.path == path }
+    }
+
+    func updateDisplayName(id: UUID, name: String) {
+        updatedDisplayNames.append((id, name))
+        if let index = repositories.firstIndex(where: { $0.id == id }) {
+            var repo = repositories[index]
+            repo.displayName = name.isEmpty ? URL(fileURLWithPath: repo.path).lastPathComponent : name
+            repositories[index] = repo
+        }
+    }
+
+    func repository(for path: String) -> WatchedRepository? {
+        let normalized = (path as NSString).standardizingPath
+        return repositories.first { $0.path == normalized }
     }
 }
 

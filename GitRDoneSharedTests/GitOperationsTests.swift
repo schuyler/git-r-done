@@ -152,6 +152,95 @@ final class GitOperationsTests: XCTestCase {
         XCTAssertEqual(mockExecutor.executedCommands[0].arguments, ["checkout", "--theirs", "--", "file.txt"])
         XCTAssertEqual(mockExecutor.executedCommands[1].arguments, ["add", "--", "file.txt"])
     }
+
+    // MARK: - getRemoteURL
+
+    func test_getRemoteURL_returnsURL_whenRemoteExists() {
+        mockExecutor.stub(
+            ["remote", "get-url", "origin"],
+            result: .success("https://github.com/user/my-project.git\n")
+        )
+
+        let result = gitOps.getRemoteURL(in: "/repo")
+
+        guard case .success(let url) = result else {
+            XCTFail("Expected success")
+            return
+        }
+        XCTAssertEqual(url, "https://github.com/user/my-project.git")
+    }
+
+    func test_getRemoteURL_returnsNil_whenNoRemote() {
+        mockExecutor.stub(
+            ["remote", "get-url", "origin"],
+            result: .failure("fatal: No such remote 'origin'", exitCode: 2)
+        )
+
+        let result = gitOps.getRemoteURL(in: "/repo")
+
+        guard case .success(let url) = result else {
+            XCTFail("Expected success with nil")
+            return
+        }
+        XCTAssertNil(url)
+    }
+
+    func test_getRemoteURL_usesSpecifiedRemote() {
+        mockExecutor.stub(
+            ["remote", "get-url", "upstream"],
+            result: .success("https://github.com/upstream/project.git\n")
+        )
+
+        let result = gitOps.getRemoteURL(in: "/repo", remote: "upstream")
+
+        guard case .success(let url) = result else {
+            XCTFail("Expected success")
+            return
+        }
+        XCTAssertEqual(url, "https://github.com/upstream/project.git")
+    }
+
+    // MARK: - parseRepoName
+
+    func test_parseRepoName_httpsURL() {
+        let name = GitOperations.parseRepoName(from: "https://github.com/user/my-project.git")
+        XCTAssertEqual(name, "my-project")
+    }
+
+    func test_parseRepoName_httpsURL_withoutGitSuffix() {
+        let name = GitOperations.parseRepoName(from: "https://github.com/user/my-project")
+        XCTAssertEqual(name, "my-project")
+    }
+
+    func test_parseRepoName_sshURL() {
+        let name = GitOperations.parseRepoName(from: "git@github.com:user/my-project.git")
+        XCTAssertEqual(name, "my-project")
+    }
+
+    func test_parseRepoName_sshURL_withoutGitSuffix() {
+        let name = GitOperations.parseRepoName(from: "git@gitlab.com:team/shared-docs")
+        XCTAssertEqual(name, "shared-docs")
+    }
+
+    func test_parseRepoName_sshProtocolURL() {
+        let name = GitOperations.parseRepoName(from: "ssh://git@bitbucket.org/org/repo.git")
+        XCTAssertEqual(name, "repo")
+    }
+
+    func test_parseRepoName_nestedPath() {
+        let name = GitOperations.parseRepoName(from: "https://gitlab.com/group/subgroup/project.git")
+        XCTAssertEqual(name, "project")
+    }
+
+    func test_parseRepoName_emptyString_returnsNil() {
+        let name = GitOperations.parseRepoName(from: "")
+        XCTAssertNil(name)
+    }
+
+    func test_parseRepoName_invalidURL_returnsNil() {
+        let name = GitOperations.parseRepoName(from: "not-a-url")
+        XCTAssertNil(name)
+    }
 }
 
 extension Result {

@@ -66,6 +66,13 @@ final class MenuBarViewModel {
         }
     }
 
+    /// Returns the display name for a repository path.
+    /// Looks up from configuration, falls back to folder name.
+    func displayName(for path: String) -> String {
+        repoConfiguration.repository(for: path)?.displayName
+            ?? URL(fileURLWithPath: path).lastPathComponent
+    }
+
     func addRepositories(urls: [URL]) {
         var invalidPaths: [String] = []
 
@@ -122,7 +129,7 @@ struct Git_R_DoneApp: App {
                     } label: {
                         HStack {
                             statusIcon(for: summary.status)
-                            Text(summary.displayName)
+                            Text(menuViewModel.displayName(for: summary.path))
                         }
                     }
                 }
